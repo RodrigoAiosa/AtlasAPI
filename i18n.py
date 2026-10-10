@@ -6,6 +6,11 @@ kits_i18n.py. O que faltar cai no inglês.
 """
 from __future__ import annotations
 
+import json
+import unicodedata
+from functools import lru_cache
+from pathlib import Path
+
 import streamlit as st
 
 SUPPORTED = {"pt": "Português", "en": "English"}
@@ -314,3 +319,31 @@ FEATURED = {
 
 def featured_description(name: str, original: str) -> str:
     return FEATURED.get(lang(), {}).get(name, original)
+
+
+# ---------- Catálogo (categorias e descrições das APIs) ----------
+
+@lru_cache(maxsize=None)
+def _catalog(language: str) -> dict:
+    """Lê catalog_<idioma>.json: {"categories": {...}, "descriptions": {...}}.
+
+    As chaves são os textos originais em inglês do repositório de origem.
+    APIs novas ou com descrição alterada lá ficam em inglês até serem traduzidas.
+    """
+    path = Path(__file__).parent / f"catalog_{language}.json"
+    if not path.exists():
+        return {"categories": {}, "descriptions": {}}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def category(name: str) -> str:
+    return _catalog(lang())["categories"].get(name, name)
+
+
+def description(text: str) -> str:
+    return _catalog(lang())["descriptions"].get(text, text)
+
+
+def sort_key(text: str) -> str:
+    """Chave de ordenação que ignora acentos, para "Câmbio" ficar junto de "Calendário"."""
+    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().casefold()

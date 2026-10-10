@@ -26,7 +26,7 @@ A interface está em português e inglês. O idioma inicial é escolhido nesta o
 
 O visitante pode trocar o idioma no seletor do topo. Para adicionar um idioma, inclua o código em `SUPPORTED` e as traduções em `STRINGS` no `i18n.py`, e os textos dos kits em `kits_i18n.py`. O que não for traduzido aparece em inglês (interface) ou em português (kits).
 
-Descrições e categorias do catálogo vêm do repositório de origem e ficam em inglês. O código gerado pelos kits usa nomes de tabelas e colunas em português nos dois idiomas.
+As categorias e as descrições das APIs são traduzidas pelo arquivo `catalog_pt.json`, que usa o texto original em inglês como chave. APIs novas, ou com a descrição alterada no repositório de origem, aparecem em inglês até serem incluídas nesse arquivo. A busca encontra termos nos dois idiomas. O código gerado pelos kits usa nomes de tabelas e colunas em português nos dois idiomas.
 
 ## Estrutura
 
@@ -36,6 +36,7 @@ api_atlas_streamlit/
 ├── kits.py
 ├── kits_i18n.py
 ├── i18n.py
+├── catalog_pt.json
 ├── style.css
 ├── requirements.txt
 ├── README.md

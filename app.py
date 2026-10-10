@@ -202,9 +202,9 @@ def card_html(item) -> str:
         f'<div class="api-icon">{name[:1].upper()}</div>'
         '<div class="api-heading">'
         f'<div class="api-name">{title}</div>'
-        f'<div class="api-category">{text(str(item["category"]))}</div>'
+        f'<div class="api-category">{text(i18n.category(str(item["category"])))}</div>'
         "</div></div>"
-        f'<p class="api-description">{text(str(item["description"])) or t("no_description")}</p>'
+        f'<p class="api-description">{text(i18n.description(str(item["description"]))) or t("no_description")}</p>'
         '<div class="meta-row">'
         + meta_badge("Auth", str(item["auth"]))
         + meta_badge("HTTPS", str(item["https"]))
@@ -285,6 +285,9 @@ with tab_catalog:
     if query:
         fields = ["name", "description", "category", "auth", "https", "cors"]
         searchable = apis[fields].fillna("").astype(str)
+        # The search also matches the translated description and category.
+        searchable["description_local"] = searchable["description"].map(i18n.description)
+        searchable["category_local"] = searchable["category"].map(i18n.category)
         mask = searchable.apply(lambda col: col.str.casefold().str.contains(re.escape(query), na=False)).any(axis=1)
         results = apis[mask].copy()
         st.markdown(f'<div class="section-heading"><h2>{t("results_title")}</h2><span>{t("results_count", n=i18n.number(len(results)))}</span></div>', unsafe_allow_html=True)
@@ -303,7 +306,7 @@ with tab_catalog:
                       <div class="featured-icon">{item['icon']}</div>
                       <div class="featured-content">
                         <div class="featured-name">{item['name']}</div>
-                        <div class="featured-category">{item['category']}</div>
+                        <div class="featured-category">{i18n.category(item['category'])}</div>
                         <p>{i18n.featured_description(item['name'], item['description'])}</p>
                         <span class="featured-link">{t("featured_link")}</span>
                       </div>
@@ -314,17 +317,19 @@ with tab_catalog:
 
         st.markdown(f'<div class="section-heading categories-heading"><h2>{t("browse_title")}</h2><span>{t("browse_sub")}</span></div>', unsafe_allow_html=True)
         if not apis.empty:
-            category_counts = apis.groupby("category").size().sort_index(key=lambda idx: idx.str.casefold())
+            category_counts = apis.groupby("category").size().sort_index(
+                key=lambda idx: idx.map(lambda name: i18n.sort_key(i18n.category(name)))
+            )
             cols = st.columns(4, gap="small")
             for idx, (category, count) in enumerate(category_counts.items()):
                 with cols[idx % 4]:
-                    if st.button(f"{category}  ·  {count}", key=f"category_{slug(str(category))}", use_container_width=True):
+                    if st.button(f"{i18n.category(str(category))}  ·  {count}", key=f"category_{slug(str(category))}", use_container_width=True):
                         st.session_state["selected_category"] = str(category)
                         st.rerun()
 
             selected = st.session_state.get("selected_category")
             if selected:
-                st.markdown(f'<div class="section-heading category-results"><h2>{text(selected)}</h2><span>{t("n_apis", n=i18n.number(int(category_counts.get(selected, 0))))}</span></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="section-heading category-results"><h2>{text(i18n.category(selected))}</h2><span>{t("n_apis", n=i18n.number(int(category_counts.get(selected, 0))))}</span></div>', unsafe_allow_html=True)
                 subset = apis[apis["category"] == selected]
                 render_grid(subset, f"category:{selected}")
                 if st.button(t("back"), key="back_categories"):
