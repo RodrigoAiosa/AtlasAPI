@@ -327,7 +327,6 @@ st.markdown(
     """
     <footer class="site-footer">
       <div><strong>API Atlas</strong><span>Built for curious developers.</span></div>
-      <a href="https://github.com/public-apis/public-apis" target="_blank" rel="noopener noreferrer">Data source: public-apis on GitHub ↗</a>
     </footer>
     """,
     unsafe_allow_html=True,
