@@ -6,6 +6,11 @@ kits_i18n.py. O que faltar cai no inglês.
 """
 from __future__ import annotations
 
+import json
+import unicodedata
+from functools import lru_cache
+from pathlib import Path
+
 import streamlit as st
 
 SUPPORTED = {"pt": "Português", "en": "English"}
@@ -124,6 +129,7 @@ STRINGS = {
         "err_load": "Could not load the catalog from GitHub.",
         "err_parse": "The catalog was downloaded, but no category table was found. The source repository may have changed its structure.",
         "err_hint": "Check your internet connection. The catalog is fetched directly from GitHub.",
+        "sources_partial": "Some sources could not be loaded right now ({sources}); the catalog is temporarily smaller.",
         "yes": "Yes", "no": "No", "unknown": "Unknown",
         "no_description": "No description available.",
         "load_more": "Load more  ·  {n} left",
@@ -214,6 +220,7 @@ STRINGS = {
         "err_load": "Não foi possível carregar o catálogo do GitHub.",
         "err_parse": "O catálogo foi baixado, mas nenhuma tabela de categorias foi identificada. A estrutura do repositório de origem pode ter mudado.",
         "err_hint": "Confira a conexão com a internet. O catálogo é obtido diretamente do GitHub.",
+        "sources_partial": "Algumas fontes não puderam ser carregadas agora ({sources}); o catálogo está temporariamente menor.",
         "yes": "Sim", "no": "Não", "unknown": "Não informado",
         "no_description": "Sem descrição disponível.",
         "load_more": "Carregar mais  ·  restam {n}",
@@ -314,3 +321,31 @@ FEATURED = {
 
 def featured_description(name: str, original: str) -> str:
     return FEATURED.get(lang(), {}).get(name, original)
+
+
+# ---------- Catálogo (categorias e descrições das APIs) ----------
+
+@lru_cache(maxsize=None)
+def _catalog(language: str) -> dict:
+    """Lê catalog_<idioma>.json: {"categories": {...}, "descriptions": {...}}.
+
+    As chaves são os textos originais em inglês do repositório de origem.
+    APIs novas ou com descrição alterada lá ficam em inglês até serem traduzidas.
+    """
+    path = Path(__file__).parent / f"catalog_{language}.json"
+    if not path.exists():
+        return {"categories": {}, "descriptions": {}}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def category(name: str) -> str:
+    return _catalog(lang())["categories"].get(name, name)
+
+
+def description(text: str) -> str:
+    return _catalog(lang())["descriptions"].get(text, text)
+
+
+def sort_key(text: str) -> str:
+    """Chave de ordenação que ignora acentos, para "Câmbio" ficar junto de "Calendário"."""
+    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().casefold()

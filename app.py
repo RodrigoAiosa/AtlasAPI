@@ -5,9 +5,9 @@ from html import escape
 from pathlib import Path
 
 import pandas as pd
-import requests
 import streamlit as st
 
+import catalog
 import i18n
 import kits
 from i18n import t
@@ -29,11 +29,6 @@ def load_css() -> None:
 
 load_css()
 
-README_URLS = (
-    "https://raw.githubusercontent.com/public-apis/public-apis/master/README.md",
-    "https://raw.githubusercontent.com/public-apis/public-apis/main/README.md",
-)
-
 FEATURED = [
     {"name": "Open-Meteo", "category": "Weather", "description": "Weather forecasts and historical weather data.", "icon": "🌤️", "url": "https://open-meteo.com/"},
     {"name": "The Cat API", "category": "Animals", "description": "Images, facts, and other data about cats.", "icon": "🐈", "url": "https://thecatapi.com/"},
@@ -43,132 +38,11 @@ FEATURED = [
     {"name": "Open Library", "category": "Books", "description": "Explore book records, authors, and editions.", "icon": "📚", "url": "https://openlibrary.org/developers/api"},
 ]
 
-def clean_cell(value: str) -> str:
-    value = re.sub(r"<br\s*/?>", " ", str(value), flags=re.I)
-    value = re.sub(r"`([^`]*)`", r"\1", value)
-    value = re.sub(r"\*\*(.*?)\*\*", r"\1", value)
-    value = re.sub(r"\*(.*?)\*", r"\1", value)
-    return re.sub(r"\s+", " ", value).strip()
-
-def split_row(line: str) -> list[str]:
-    return [part.strip() for part in line.strip().strip("|").split("|")]
-
-def markdown_link(value: str) -> tuple[str, str]:
-    match = re.search(r"\[([^\]]+)\]\((https?://[^)]+)\)", value)
-    if match:
-        return clean_cell(match.group(1)), match.group(2).strip()
-    return clean_cell(value), ""
-
-class CatalogError(RuntimeError):
-    """Catalog failure; `key` is the i18n message so the cached loader stays language-neutral."""
-
-    def __init__(self, key: str, detail: str = "") -> None:
-        super().__init__(key)
-        self.key, self.detail = key, detail
-
 @st.cache_data(ttl=1800, show_spinner=False)
-def load_apis() -> pd.DataFrame:
-    """Parse every category table from the upstream public-apis README."""
-    content = None
-    last_error = None
-    for url in README_URLS:
-        try:
-            response = requests.get(url, timeout=25, headers={"User-Agent": "API-Atlas-Streamlit"})
-            response.raise_for_status()
-            content = response.text
-            break
-        except requests.RequestException as exc:
-            last_error = exc
-
-    if content is None:
-        raise CatalogError("err_load", str(last_error))
-
-    rows: list[dict] = []
-    category = ""
-    lines = content.splitlines()
-    i = 0
-
-    def normalize_header(value: str) -> str:
-        return clean_cell(value).strip().lower()
-
-    while i < len(lines):
-        raw_line = lines[i].strip()
-
-        # The repository uses ### headings for actual categories.
-        heading = re.match(r"^#{2,4}\s+(.+?)\s*#*\s*$", raw_line)
-        if heading:
-            heading_text = clean_cell(heading.group(1))
-            # The index and non-catalog sections are not API categories.
-            if heading_text.casefold() not in {
-                "index", "mcp servers", "apilayer apis", "learn more about public apis",
-                "table of contents", "contents", "contributing", "license",
-            }:
-                category = heading_text
-
-        # Category tables have five columns. The header row in the current README
-        # may or may not start with a leading pipe, so do not require one.
-        candidate = raw_line.strip("|").strip()
-        header_cells = [normalize_header(cell) for cell in candidate.split("|")]
-        is_api_header = (
-            len(header_cells) >= 5
-            and header_cells[0] == "api"
-            and "description" in header_cells
-            and "auth" in header_cells
-            and "https" in header_cells
-            and "cors" in header_cells
-        )
-
-        if is_api_header and category:
-            headers = header_cells
-            j = i + 1
-
-            # Skip the Markdown separator row, if present.
-            if j < len(lines) and re.match(r"^\s*\|?\s*:?-{2,}", lines[j]):
-                j += 1
-
-            while j < len(lines):
-                table_line = lines[j].strip()
-                if not table_line.startswith("|"):
-                    break
-
-                cells = split_row(table_line)
-                if len(cells) < len(headers):
-                    j += 1
-                    continue
-
-                row = dict(zip(headers, cells))
-                name, api_url = markdown_link(row.get("api", ""))
-                description = clean_cell(row.get("description", ""))
-                auth = clean_cell(row.get("auth", "Unknown")) or "Unknown"
-                https = clean_cell(row.get("https", "Unknown")) or "Unknown"
-                cors = clean_cell(row.get("cors", "Unknown")) or "Unknown"
-
-                if name and name.casefold() not in {"api", "name"}:
-                    rows.append({
-                        "name": name,
-                        "description": description,
-                        "auth": auth,
-                        "https": https,
-                        "cors": cors,
-                        "url": api_url,
-                        "category": category,
-                    })
-                j += 1
-
-            i = j
-            continue
-
-        i += 1
-
-    df = pd.DataFrame(rows, columns=[
-        "name", "description", "auth", "https", "cors", "url", "category"
-    ])
-    if df.empty:
-        raise CatalogError("err_parse")
-
-    # Keep all listed entries; duplicate names in different categories or URLs are valid.
-    df = df.drop_duplicates(subset=["name", "category", "url"], keep="first")
-    return df.reset_index(drop=True)
+def load_apis() -> tuple[pd.DataFrame, list[str]]:
+    """Catalog from every source, plus the extra sources that could not be read."""
+    rows, failed = catalog.load()
+    return pd.DataFrame(rows, columns=catalog.COLUMNS), failed
 
 def slug(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.casefold()).strip("-")
@@ -202,9 +76,9 @@ def card_html(item) -> str:
         f'<div class="api-icon">{name[:1].upper()}</div>'
         '<div class="api-heading">'
         f'<div class="api-name">{title}</div>'
-        f'<div class="api-category">{text(str(item["category"]))}</div>'
+        f'<div class="api-category">{text(i18n.category(str(item["category"])))}</div>'
         "</div></div>"
-        f'<p class="api-description">{text(str(item["description"])) or t("no_description")}</p>'
+        f'<p class="api-description">{text(i18n.description(str(item["description"]))) or t("no_description")}</p>'
         '<div class="meta-row">'
         + meta_badge("Auth", str(item["auth"]))
         + meta_badge("HTTPS", str(item["https"]))
@@ -230,11 +104,11 @@ def render_grid(items: pd.DataFrame, view: str) -> None:
 # The catalog is loaded first so the header can show its real size.
 try:
     with st.spinner(t("loading")):
-        apis = load_apis()
+        apis, failed_sources = load_apis()
     source_error = None
 except Exception as exc:
-    apis = pd.DataFrame(columns=["name", "description", "auth", "https", "cors", "url", "category"])
-    source_error = t(exc.key) if isinstance(exc, CatalogError) else str(exc)
+    apis, failed_sources = pd.DataFrame(columns=catalog.COLUMNS), []
+    source_error = t(exc.key) if isinstance(exc, catalog.CatalogError) else str(exc)
 
 _, language_column = st.columns([5, 1])
 with language_column:
@@ -276,6 +150,8 @@ with tab_catalog:
         key="global_search",
     )
 
+    if failed_sources:
+        st.caption(t("sources_partial", sources=", ".join(failed_sources)))
     if source_error:
         st.error(source_error)
         st.info(t("err_hint"))
@@ -285,6 +161,9 @@ with tab_catalog:
     if query:
         fields = ["name", "description", "category", "auth", "https", "cors"]
         searchable = apis[fields].fillna("").astype(str)
+        # The search also matches the translated description and category.
+        searchable["description_local"] = searchable["description"].map(i18n.description)
+        searchable["category_local"] = searchable["category"].map(i18n.category)
         mask = searchable.apply(lambda col: col.str.casefold().str.contains(re.escape(query), na=False)).any(axis=1)
         results = apis[mask].copy()
         st.markdown(f'<div class="section-heading"><h2>{t("results_title")}</h2><span>{t("results_count", n=i18n.number(len(results)))}</span></div>', unsafe_allow_html=True)
@@ -303,7 +182,7 @@ with tab_catalog:
                       <div class="featured-icon">{item['icon']}</div>
                       <div class="featured-content">
                         <div class="featured-name">{item['name']}</div>
-                        <div class="featured-category">{item['category']}</div>
+                        <div class="featured-category">{i18n.category(item['category'])}</div>
                         <p>{i18n.featured_description(item['name'], item['description'])}</p>
                         <span class="featured-link">{t("featured_link")}</span>
                       </div>
@@ -314,17 +193,19 @@ with tab_catalog:
 
         st.markdown(f'<div class="section-heading categories-heading"><h2>{t("browse_title")}</h2><span>{t("browse_sub")}</span></div>', unsafe_allow_html=True)
         if not apis.empty:
-            category_counts = apis.groupby("category").size().sort_index(key=lambda idx: idx.str.casefold())
+            category_counts = apis.groupby("category").size().sort_index(
+                key=lambda idx: idx.map(lambda name: i18n.sort_key(i18n.category(name)))
+            )
             cols = st.columns(4, gap="small")
             for idx, (category, count) in enumerate(category_counts.items()):
                 with cols[idx % 4]:
-                    if st.button(f"{category}  ·  {count}", key=f"category_{slug(str(category))}", use_container_width=True):
+                    if st.button(f"{i18n.category(str(category))}  ·  {count}", key=f"category_{slug(str(category))}", use_container_width=True):
                         st.session_state["selected_category"] = str(category)
                         st.rerun()
 
             selected = st.session_state.get("selected_category")
             if selected:
-                st.markdown(f'<div class="section-heading category-results"><h2>{text(selected)}</h2><span>{t("n_apis", n=i18n.number(int(category_counts.get(selected, 0))))}</span></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="section-heading category-results"><h2>{text(i18n.category(selected))}</h2><span>{t("n_apis", n=i18n.number(int(category_counts.get(selected, 0))))}</span></div>', unsafe_allow_html=True)
                 subset = apis[apis["category"] == selected]
                 render_grid(subset, f"category:{selected}")
                 if st.button(t("back"), key="back_categories"):
