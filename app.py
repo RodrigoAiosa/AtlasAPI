@@ -55,6 +55,7 @@ def markdown_link(value: str) -> tuple[str, str]:
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def load_apis() -> pd.DataFrame:
+    """Parse every category table from the upstream public-apis README."""
     content = None
     last_error = None
     for url in README_URLS:
@@ -65,56 +66,99 @@ def load_apis() -> pd.DataFrame:
             break
         except requests.RequestException as exc:
             last_error = exc
+
     if content is None:
         raise RuntimeError(f"Não foi possível carregar o README do GitHub: {last_error}")
 
     rows: list[dict] = []
-    category = "Other"
+    category = ""
     lines = content.splitlines()
     i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-        heading = re.match(r"^##\s+(.+?)\s*#*\s*$", line)
-        if heading:
-            possible_category = clean_cell(heading.group(1))
-            if possible_category.lower() not in {"table of contents", "contents", "contributing", "license"}:
-                category = possible_category
 
-        if line.startswith("|"):
-            headers = [clean_cell(x).lower() for x in split_row(line)]
-            if any(x in headers for x in ("api", "name")) and any("description" in x for x in headers):
-                j = i + 1
-                if j < len(lines) and re.match(r"^\s*\|?[\s:|-]+\|?\s*$", lines[j]):
+    def normalize_header(value: str) -> str:
+        return clean_cell(value).strip().lower()
+
+    while i < len(lines):
+        raw_line = lines[i].strip()
+
+        # The repository uses ### headings for actual categories.
+        heading = re.match(r"^#{2,4}\s+(.+?)\s*#*\s*$", raw_line)
+        if heading:
+            heading_text = clean_cell(heading.group(1))
+            # The index and non-catalog sections are not API categories.
+            if heading_text.casefold() not in {
+                "index", "mcp servers", "apilayer apis", "learn more about public apis",
+                "table of contents", "contents", "contributing", "license",
+            }:
+                category = heading_text
+
+        # Category tables have five columns. The header row in the current README
+        # may or may not start with a leading pipe, so do not require one.
+        candidate = raw_line.strip("|").strip()
+        header_cells = [normalize_header(cell) for cell in candidate.split("|")]
+        is_api_header = (
+            len(header_cells) >= 5
+            and header_cells[0] == "api"
+            and "description" in header_cells
+            and "auth" in header_cells
+            and "https" in header_cells
+            and "cors" in header_cells
+        )
+
+        if is_api_header and category:
+            headers = header_cells
+            j = i + 1
+
+            # Skip the Markdown separator row, if present.
+            if j < len(lines) and re.match(r"^\s*\|?\s*:?-{2,}", lines[j]):
+                j += 1
+
+            while j < len(lines):
+                table_line = lines[j].strip()
+                if not table_line.startswith("|"):
+                    break
+
+                cells = split_row(table_line)
+                if len(cells) < len(headers):
                     j += 1
-                while j < len(lines) and lines[j].strip().startswith("|"):
-                    cells = split_row(lines[j])
-                    if len(cells) >= len(headers):
-                        row = dict(zip(headers, cells))
-                        raw_name = row.get("api", row.get("name", ""))
-                        name, api_url = markdown_link(raw_name)
-                        raw_link = row.get("link", "")
-                        _, link_url = markdown_link(raw_link)
-                        if not api_url:
-                            api_url = link_url or (raw_link.strip() if raw_link.strip().startswith("http") else "")
-                        if name and name.lower() not in {"api", "name"}:
-                            rows.append({
-                                "name": name,
-                                "description": clean_cell(row.get("description", "")),
-                                "auth": clean_cell(row.get("auth", "Unknown")) or "Unknown",
-                                "https": clean_cell(row.get("https", "Unknown")) or "Unknown",
-                                "cors": clean_cell(row.get("cors", "Unknown")) or "Unknown",
-                                "url": api_url,
-                                "category": category,
-                            })
-                    j += 1
-                i = j
-                continue
+                    continue
+
+                row = dict(zip(headers, cells))
+                name, api_url = markdown_link(row.get("api", ""))
+                description = clean_cell(row.get("description", ""))
+                auth = clean_cell(row.get("auth", "Unknown")) or "Unknown"
+                https = clean_cell(row.get("https", "Unknown")) or "Unknown"
+                cors = clean_cell(row.get("cors", "Unknown")) or "Unknown"
+
+                if name and name.casefold() not in {"api", "name"}:
+                    rows.append({
+                        "name": name,
+                        "description": description,
+                        "auth": auth,
+                        "https": https,
+                        "cors": cors,
+                        "url": api_url,
+                        "category": category,
+                    })
+                j += 1
+
+            i = j
+            continue
+
         i += 1
 
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(rows, columns=[
+        "name", "description", "auth", "https", "cors", "url", "category"
+    ])
     if df.empty:
-        raise RuntimeError("O README foi carregado, mas nenhuma tabela de APIs foi identificada.")
-    return df.drop_duplicates(subset=["name", "category"]).reset_index(drop=True)
+        raise RuntimeError(
+            "O README do GitHub foi carregado, mas nenhuma tabela de categorias foi identificada. "
+            "A estrutura do repositório pode ter mudado."
+        )
+
+    # Keep all listed entries; duplicate names in different categories or URLs are valid.
+    df = df.drop_duplicates(subset=["name", "category", "url"], keep="first")
+    return df.reset_index(drop=True)
 
 def slug(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.casefold()).strip("-")

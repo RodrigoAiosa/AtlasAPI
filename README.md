@@ -55,4 +55,4 @@ streamlit run app.py
 
 Fonte: https://github.com/public-apis/public-apis
 
-A aplicação busca o README do repositório upstream. Como a estrutura desse README pode mudar, o parser pode precisar de manutenção. A lista de APIs em destaque na página inicial é apenas uma seleção editorial inicial; os resultados e categorias são carregados do catálogo upstream. Autenticação, HTTPS e CORS podem mudar e devem ser confirmados na documentação oficial de cada API.
+A aplicação percorre as tabelas de todas as categorias no README upstream e carrega todas as entradas encontradas. A lista de APIs em destaque na página inicial é uma seleção editorial; o catálogo completo, a busca global e os resultados por categoria vêm do repositório upstream. Autenticação, HTTPS e CORS podem mudar e devem ser confirmados na documentação oficial de cada API.
