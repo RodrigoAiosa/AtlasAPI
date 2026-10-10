@@ -25,6 +25,11 @@ html, body, [data-testid="stAppViewContainer"] {
 .hero h1 { color: #171a2e !important; }
 .hero h1 .soft { color: #777d8e; }
 .hero-subtitle { color: #777d8e; font-size: 1.05rem; margin: 0 auto !important; max-width: 520px; text-align: center; }
+.hero-stats { display: flex; justify-content: center; align-items: center; gap: 2.2rem; margin-top: 1.9rem; }
+.hero-stat { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
+.hero-stat strong { font-size: clamp(2rem, 4.5vw, 2.75rem); line-height: 1; letter-spacing: -.04em; font-weight: 800; color: #6c63ff; font-variant-numeric: tabular-nums; }
+.hero-stat span { color: #777d8e; font-size: .74rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.hero-stat-divider { width: 1px; height: 2.6rem; background: #e1e4ec; }
 div[data-testid="stTextInput"] { max-width: 640px; margin: .5rem auto 3rem; }
 /* The pill is drawn on the wrapper; both selectors are needed because
    Streamlit changed the field markup between versions. */
