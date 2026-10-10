@@ -1,39 +1,58 @@
-# API Atlas — Diretório de APIs públicas
+# API Atlas — Public API Directory
 
-Aplicação em Python + Streamlit que lê o catálogo do repositório [public-apis](https://github.com/public-apis/public-apis), organiza as APIs por categoria e oferece busca global.
+Diretório de APIs públicas construído com Python e Streamlit, inspirado no layout de referência enviado.
 
-## Executar localmente
+## Recursos
 
-```bash
-python -m venv .venv
+- Pesquisa global fixa no topo da página.
+- Catálogo obtido do README do repositório `public-apis/public-apis` no GitHub.
+- Busca por nome, descrição, categoria e metadados.
+- Navegação por categorias com contagem de APIs.
+- Cards com nome, descrição, autenticação, HTTPS e CORS.
+- Links para documentação quando disponíveis.
+- Cache por 30 minutos para reduzir chamadas ao GitHub.
+- CSS separado, configuração do tema Streamlit e estrutura pronta para GitHub/Streamlit Community Cloud.
+
+## Estrutura
+
+```text
+api_atlas_streamlit/
+├── app.py
+├── style.css
+├── requirements.txt
+├── README.md
+├── .gitignore
+└── .streamlit/
+    └── config.toml
 ```
 
-Windows:
+## Executar no Windows
+
 ```bat
+python -m venv .venv
 .venv\Scripts\activate
-```
-
-macOS/Linux:
-```bash
-source .venv/bin/activate
-```
-
-Instale as dependências e inicie:
-
-```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Funcionalidades
+## Executar no macOS/Linux
 
-- Catálogo carregado do README do GitHub.
-- Navegação por categoria.
-- Busca global por nome, descrição, categoria e metadados.
-- Informações de autenticação, HTTPS e CORS.
-- Links para a API quando encontrados no README.
-- Cache de dados por 30 minutos.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+streamlit run app.py
+```
 
-## Observações
+## Publicar no Streamlit Community Cloud
 
-A aplicação depende do formato Markdown do README upstream. Se o repositório alterar sua estrutura, o parser poderá precisar de ajustes. As informações sobre autenticação, HTTPS e CORS devem ser confirmadas na documentação oficial de cada API.
+1. Crie um repositório no GitHub e envie todos os arquivos desta pasta.
+2. Acesse https://share.streamlit.io/ e conecte sua conta GitHub.
+3. Escolha o repositório e defina `app.py` como arquivo principal.
+4. Publique o app.
+
+## Fonte e observações
+
+Fonte: https://github.com/public-apis/public-apis
+
+A aplicação busca o README do repositório upstream. Como a estrutura desse README pode mudar, o parser pode precisar de manutenção. A lista de APIs em destaque na página inicial é apenas uma seleção editorial inicial; os resultados e categorias são carregados do catálogo upstream. Autenticação, HTTPS e CORS podem mudar e devem ser confirmados na documentação oficial de cada API.
