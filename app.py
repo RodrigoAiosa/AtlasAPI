@@ -216,15 +216,36 @@ def render_grid(items: pd.DataFrame, view: str) -> None:
             st.session_state["grid_limit"] = limit + PAGE_SIZE
             st.rerun()
 
+# The catalog is loaded first so the header can show its real size.
+try:
+    with st.spinner("Loading the public API catalog…"):
+        apis = load_apis()
+    source_error = None
+except Exception as exc:
+    apis = pd.DataFrame(columns=["name", "description", "auth", "https", "cors", "url", "category"])
+    source_error = str(exc)
+
+def big_number(value: int) -> str:
+    return f"{value:,}".replace(",", ".")
+
+hero_stats = ""
+if not apis.empty:
+    hero_stats = (
+        '<div class="hero-stats">'
+        f'<div class="hero-stat"><strong>{big_number(len(apis))}</strong><span>free APIs</span></div>'
+        '<div class="hero-stat-divider"></div>'
+        f'<div class="hero-stat"><strong>{big_number(apis["category"].nunique())}</strong><span>categories</span></div>'
+        "</div>"
+    )
+
 # Header / search
 st.markdown(
-    """
-    <div class="hero">
-      <div class="eyebrow"><span class="eyebrow-dot"></span> THE OPEN API DIRECTORY</div>
-      <h1>A world of APIs.<br><span class="soft">One search away.</span></h1>
-      <p class="hero-subtitle">A collective list of free APIs for software and web development.</p>
-    </div>
-    """,
+    '<div class="hero">'
+    '<div class="eyebrow"><span class="eyebrow-dot"></span> THE OPEN API DIRECTORY</div>'
+    '<h1>A world of APIs.<br><span class="soft">One search away.</span></h1>'
+    '<p class="hero-subtitle">A collective list of free APIs for software and web development.</p>'
+    f"{hero_stats}"
+    "</div>",
     unsafe_allow_html=True,
 )
 search = st.text_input(
@@ -233,14 +254,6 @@ search = st.text_input(
     label_visibility="collapsed",
     key="global_search",
 )
-
-try:
-    with st.spinner("Loading the public API catalog…"):
-        apis = load_apis()
-    source_error = None
-except Exception as exc:
-    apis = pd.DataFrame(columns=["name", "description", "auth", "https", "cors", "url", "category"])
-    source_error = str(exc)
 
 if source_error:
     st.error(source_error)
