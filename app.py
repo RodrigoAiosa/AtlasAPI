@@ -8,12 +8,15 @@ import pandas as pd
 import requests
 import streamlit as st
 
+import i18n
 import kits
+from i18n import t
 
 ROOT = Path(__file__).parent
 PAGE_SIZE = 24
+i18n.init()
 st.set_page_config(
-    page_title="API Atlas — Free Public APIs",
+    page_title=t("page_title"),
     page_icon="🌐",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -56,6 +59,13 @@ def markdown_link(value: str) -> tuple[str, str]:
         return clean_cell(match.group(1)), match.group(2).strip()
     return clean_cell(value), ""
 
+class CatalogError(RuntimeError):
+    """Catalog failure; `key` is the i18n message so the cached loader stays language-neutral."""
+
+    def __init__(self, key: str, detail: str = "") -> None:
+        super().__init__(key)
+        self.key, self.detail = key, detail
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def load_apis() -> pd.DataFrame:
     """Parse every category table from the upstream public-apis README."""
@@ -71,7 +81,7 @@ def load_apis() -> pd.DataFrame:
             last_error = exc
 
     if content is None:
-        raise RuntimeError(f"Não foi possível carregar o README do GitHub: {last_error}")
+        raise CatalogError("err_load", str(last_error))
 
     rows: list[dict] = []
     category = ""
@@ -154,10 +164,7 @@ def load_apis() -> pd.DataFrame:
         "name", "description", "auth", "https", "cors", "url", "category"
     ])
     if df.empty:
-        raise RuntimeError(
-            "O README do GitHub foi carregado, mas nenhuma tabela de categorias foi identificada. "
-            "A estrutura do repositório pode ter mudado."
-        )
+        raise CatalogError("err_parse")
 
     # Keep all listed entries; duplicate names in different categories or URLs are valid.
     df = df.drop_duplicates(subset=["name", "category", "url"], keep="first")
@@ -169,6 +176,8 @@ def slug(value: str) -> str:
 def meta_badge(label: str, value: str) -> str:
     value = value or "Unknown"
     normalized = value.casefold()
+    if normalized in {"yes", "no", "unknown"}:
+        value = t(normalized)
     status_class = "status-neutral"
     if normalized in {"yes", "true"}:
         status_class = "status-good"
@@ -195,7 +204,7 @@ def card_html(item) -> str:
         f'<div class="api-name">{title}</div>'
         f'<div class="api-category">{text(str(item["category"]))}</div>'
         "</div></div>"
-        f'<p class="api-description">{text(str(item["description"])) or "No description available."}</p>'
+        f'<p class="api-description">{text(str(item["description"])) or t("no_description")}</p>'
         '<div class="meta-row">'
         + meta_badge("Auth", str(item["auth"]))
         + meta_badge("HTTPS", str(item["https"]))
@@ -214,43 +223,44 @@ def render_grid(items: pd.DataFrame, view: str) -> None:
     st.markdown(f'<div class="api-grid">{cards}</div>', unsafe_allow_html=True)
     if limit < len(items):
         _, middle, _ = st.columns([2, 1, 2])
-        if middle.button(f"Load more  ·  {len(items) - limit} left", key="load_more", use_container_width=True):
+        if middle.button(t("load_more", n=len(items) - limit), key="load_more", use_container_width=True):
             st.session_state["grid_limit"] = limit + PAGE_SIZE
             st.rerun()
 
 # The catalog is loaded first so the header can show its real size.
 try:
-    with st.spinner("Loading the public API catalog…"):
+    with st.spinner(t("loading")):
         apis = load_apis()
     source_error = None
 except Exception as exc:
     apis = pd.DataFrame(columns=["name", "description", "auth", "https", "cors", "url", "category"])
-    source_error = str(exc)
+    source_error = t(exc.key) if isinstance(exc, CatalogError) else str(exc)
 
-def big_number(value: int) -> str:
-    return f"{value:,}".replace(",", ".")
+_, language_column = st.columns([5, 1])
+with language_column:
+    i18n.selector()
 
 hero_stats = ""
 if not apis.empty:
     hero_stats = (
         '<div class="hero-stats">'
-        f'<div class="hero-stat"><strong>{big_number(len(apis))}</strong><span>free APIs</span></div>'
+        f'<div class="hero-stat"><strong>{i18n.number(len(apis))}</strong><span>{t("stat_apis")}</span></div>'
         '<div class="hero-stat-divider"></div>'
-        f'<div class="hero-stat"><strong>{big_number(apis["category"].nunique())}</strong><span>categories</span></div>'
+        f'<div class="hero-stat"><strong>{i18n.number(apis["category"].nunique())}</strong><span>{t("stat_categories")}</span></div>'
         "</div>"
     )
 
 # Header / search
 st.markdown(
     '<div class="hero">'
-    '<div class="eyebrow"><span class="eyebrow-dot"></span> THE OPEN API DIRECTORY</div>'
-    '<h1>A world of APIs.<br><span class="soft">One search away.</span></h1>'
-    '<p class="hero-subtitle">A collective list of free APIs for software and web development.</p>'
+    f'<div class="eyebrow"><span class="eyebrow-dot"></span> {t("eyebrow")}</div>'
+    f'<h1>{t("hero_l1")}<br><span class="soft">{t("hero_l2")}</span></h1>'
+    f'<p class="hero-subtitle">{t("hero_sub")}</p>'
     f"{hero_stats}"
     "</div>",
     unsafe_allow_html=True,
 )
-tab_catalog, tab_kits, tab_python = st.tabs(["API catalog", "Kits Power BI", "Gerador Python"])
+tab_catalog, tab_kits, tab_python = st.tabs([t("tab_catalog"), t("tab_kits"), t("tab_python")])
 
 with tab_kits:
     kits.render_kits()
@@ -260,15 +270,15 @@ with tab_python:
 
 with tab_catalog:
     search = st.text_input(
-        "Search APIs",
-        placeholder="Find development, games, images APIs...",
+        t("search_label"),
+        placeholder=t("search_placeholder"),
         label_visibility="collapsed",
         key="global_search",
     )
 
     if source_error:
         st.error(source_error)
-        st.info("Confira a conexão com a internet. O catálogo é obtido diretamente do GitHub.")
+        st.info(t("err_hint"))
 
     # Search intentionally takes precedence over category selection and searches the full catalog.
     query = search.strip().casefold()
@@ -277,13 +287,13 @@ with tab_catalog:
         searchable = apis[fields].fillna("").astype(str)
         mask = searchable.apply(lambda col: col.str.casefold().str.contains(re.escape(query), na=False)).any(axis=1)
         results = apis[mask].copy()
-        st.markdown(f'<div class="section-heading"><h2>Search results</h2><span>{len(results)} APIs found</span></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="section-heading"><h2>{t("results_title")}</h2><span>{t("results_count", n=i18n.number(len(results)))}</span></div>', unsafe_allow_html=True)
         if results.empty:
-            st.markdown('<div class="empty-state"><div class="empty-icon">⌕</div><h3>No APIs found</h3><p>Try another name or keyword.</p></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="empty-state"><div class="empty-icon">⌕</div><h3>{t("empty_title")}</h3><p>{t("empty_text")}</p></div>', unsafe_allow_html=True)
         else:
             render_grid(results, f"search:{query}")
     else:
-        st.markdown('<div class="section-heading"><h2>Featured APIs</h2><span>A few places to start exploring</span></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="section-heading"><h2>{t("featured_title")}</h2><span>{t("featured_sub")}</span></div>', unsafe_allow_html=True)
         featured_cols = st.columns(3, gap="medium")
         for idx, item in enumerate(FEATURED):
             with featured_cols[idx % 3]:
@@ -294,15 +304,15 @@ with tab_catalog:
                       <div class="featured-content">
                         <div class="featured-name">{item['name']}</div>
                         <div class="featured-category">{item['category']}</div>
-                        <p>{item['description']}</p>
-                        <span class="featured-link">API documentation ↗</span>
+                        <p>{i18n.featured_description(item['name'], item['description'])}</p>
+                        <span class="featured-link">{t("featured_link")}</span>
                       </div>
                     </a>
                     """,
                     unsafe_allow_html=True,
                 )
 
-        st.markdown('<div class="section-heading categories-heading"><h2>Browse by category</h2><span>Explore the full collection</span></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="section-heading categories-heading"><h2>{t("browse_title")}</h2><span>{t("browse_sub")}</span></div>', unsafe_allow_html=True)
         if not apis.empty:
             category_counts = apis.groupby("category").size().sort_index(key=lambda idx: idx.str.casefold())
             cols = st.columns(4, gap="small")
@@ -314,19 +324,19 @@ with tab_catalog:
 
             selected = st.session_state.get("selected_category")
             if selected:
-                st.markdown(f'<div class="section-heading category-results"><h2>{text(selected)}</h2><span>{int(category_counts.get(selected, 0))} APIs</span></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="section-heading category-results"><h2>{text(selected)}</h2><span>{t("n_apis", n=i18n.number(int(category_counts.get(selected, 0))))}</span></div>', unsafe_allow_html=True)
                 subset = apis[apis["category"] == selected]
                 render_grid(subset, f"category:{selected}")
-                if st.button("← Back to all categories", key="back_categories"):
+                if st.button(t("back"), key="back_categories"):
                     st.session_state.pop("selected_category", None)
                     st.rerun()
         else:
-            st.caption("As categorias serão exibidas quando o catálogo do GitHub estiver disponível.")
+            st.caption(t("categories_unavailable"))
 
 st.markdown(
-    """
+    f"""
     <footer class="site-footer">
-      <div><strong>API Atlas</strong><span>Built for curious developers.</span></div>
+      <div><strong>API Atlas</strong><span>{t("footer_tag")}</span></div>
     </footer>
     """,
     unsafe_allow_html=True,

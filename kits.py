@@ -13,6 +13,9 @@ from urllib.parse import parse_qsl, urlsplit
 import pandas as pd
 import streamlit as st
 
+import kits_i18n
+from i18n import keyed, lang, number, t
+
 BI_DATA_GENERATOR_URL = "https://ai-bidatagenerator.streamlit.app/"
 
 CAPITAIS = {
@@ -604,6 +607,20 @@ df = pd.DataFrame(resposta.json()["dados"])''',
 ]
 
 
+# ---------- Tradução ----------
+
+def tr(kit: dict, campo: str):
+    """Campo do kit no idioma atual; sem tradução, vale o original."""
+    return kits_i18n.KITS.get(lang(), {}).get(kit["id"], {}).get(campo, kit.get(campo))
+
+
+def tr_parametro(kit: dict, parametro: dict, campo: str):
+    traducao = kits_i18n.KITS.get(lang(), {}).get(kit["id"], {}).get("parametros", {}).get(parametro["chave"], {})
+    if campo == "opcoes":
+        return traducao.get("opcoes", list(parametro["opcoes"]))
+    return traducao.get(campo, parametro.get(campo))
+
+
 # ---------- Geração de código ----------
 
 def preencher(modelo: str, valores: dict[str, str]) -> str:
@@ -612,11 +629,12 @@ def preencher(modelo: str, valores: dict[str, str]) -> str:
     return modelo
 
 
-def validar(parametro: dict, valor) -> dict[str, str]:
+def validar(parametro: dict, valor, rotulo: str = "", ajuda: str = "") -> dict[str, str]:
     """Converte o valor da tela nos marcadores do kit.
 
-    Só passam datas, inteiros, opções fixas e textos que casam com a expressão
-    do parâmetro. É isso que permite executar o código gerado na prévia.
+    Só passam datas, inteiros, opções fixas (pelo índice) e textos que casam
+    com a expressão do parâmetro. É isso que permite executar o código gerado
+    na prévia.
     """
     tipo = parametro["tipo"]
     if tipo == "data":
@@ -624,18 +642,18 @@ def validar(parametro: dict, valor) -> dict[str, str]:
     if tipo == "inteiro":
         return {parametro["chave"]: str(int(valor))}
     if tipo == "opcoes":
-        escolhido = parametro["opcoes"][valor]
+        escolhido = list(parametro["opcoes"].values())[int(valor)]
         return dict(escolhido) if isinstance(escolhido, dict) else {parametro["chave"]: escolhido}
     texto = str(valor).strip()
     if not re.fullmatch(parametro["padrao_re"], texto):
-        raise ValueError(f"{parametro['rotulo']}: formato inválido. {parametro.get('ajuda', '')}")
+        raise ValueError(t("invalid_format", label=rotulo or parametro["rotulo"], help=ajuda or parametro.get("ajuda", "")))
     return {parametro["chave"]: texto}
 
 
-def checar_intervalos(valores: dict[str, str], brutos: dict) -> None:
+def checar_intervalos(brutos: dict) -> None:
     for inicio, fim in (("DATA_INICIAL", "DATA_FINAL"), ("ANO_INICIAL", "ANO_FINAL")):
         if inicio in brutos and fim in brutos and brutos[inicio] > brutos[fim]:
-            raise ValueError("O início do período precisa ser anterior ao fim.")
+            raise ValueError(t("period_error"))
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -647,53 +665,59 @@ def executar_previa(codigo: str) -> pd.DataFrame:
 
 
 def gerar_script_generico(url: str, caminho: str, autenticacao: str, nome_chave: str, salvar_csv: bool) -> str:
-    """Script requests + pandas para um endpoint qualquer."""
+    """Script requests + pandas para um endpoint qualquer.
+
+    `autenticacao` é "none", "header" ou "query". Comentários e nomes de
+    variáveis seguem o idioma da interface.
+    """
     partes = urlsplit(url.strip())
     if partes.scheme not in {"http", "https"} or not partes.netloc:
-        raise ValueError("Informe uma URL completa, começando com https://")
+        raise ValueError(t("err_url"))
     base = f"{partes.scheme}://{partes.netloc}{partes.path}"
     parametros = dict(parse_qsl(partes.query, keep_blank_values=True))
     chaves = [parte.strip() for parte in caminho.split(".") if parte.strip()]
     nome_chave = nome_chave.strip()
+    v_params, v_headers = t("code_var_params"), t("code_var_headers")
+    v_resposta, v_dados = t("code_var_response"), t("code_var_data")
 
     linhas = ["import pandas as pd", "import requests", "", f"URL = {base!r}"]
-    if autenticacao != "Nenhuma":
+    if autenticacao != "none":
         if not nome_chave:
-            raise ValueError("Informe o nome do cabeçalho ou do parâmetro que leva a chave.")
-        linhas.append('API_KEY = "COLE_SUA_CHAVE_AQUI"')
-    if autenticacao == "Chave na URL":
+            raise ValueError(t("err_key_name"))
+        linhas.append(f'API_KEY = "{t("code_key_placeholder")}"')
+    if autenticacao == "query":
         parametros.pop(nome_chave, None)
 
     linhas.append("")
     itens = [f"    {k!r}: {v!r}," for k, v in parametros.items()]
-    if autenticacao == "Chave na URL":
+    if autenticacao == "query":
         itens.append(f"    {nome_chave!r}: API_KEY,")
     if itens:
-        linhas += ["parametros = {", *itens, "}"]
-    if autenticacao == "Chave no cabeçalho":
-        linhas.append(f"cabecalhos = {{{nome_chave!r}: API_KEY}}")
-    if itens or autenticacao == "Chave no cabeçalho":
+        linhas += [f"{v_params} = {{", *itens, "}"]
+    if autenticacao == "header":
+        linhas.append(f"{v_headers} = {{{nome_chave!r}: API_KEY}}")
+    if itens or autenticacao == "header":
         linhas.append("")
 
     argumentos = ["URL"]
     if itens:
-        argumentos.append("params=parametros")
-    if autenticacao == "Chave no cabeçalho":
-        argumentos.append("headers=cabecalhos")
+        argumentos.append(f"params={v_params}")
+    if autenticacao == "header":
+        argumentos.append(f"headers={v_headers}")
     argumentos.append("timeout=30")
     linhas += [
-        f"resposta = requests.get({', '.join(argumentos)})",
-        "resposta.raise_for_status()",
-        "dados = resposta.json()",
+        f"{v_resposta} = requests.get({', '.join(argumentos)})",
+        f"{v_resposta}.raise_for_status()",
+        f"{v_dados} = {v_resposta}.json()",
     ]
     if chaves:
-        linhas += ["", "# Desce até a lista de registros dentro do JSON"]
+        linhas += ["", t("code_comment_path")]
         for chave in chaves:
             indice = int(chave) if chave.lstrip("-").isdigit() else chave
-            linhas.append(f"dados = dados[{indice!r}]")
-    linhas += ["", "# Colunas aninhadas viram nomes com ponto, como endereco.cidade", "df = pd.json_normalize(dados)"]
+            linhas.append(f"{v_dados} = {v_dados}[{indice!r}]")
+    linhas += ["", t("code_comment_normalize"), f"df = pd.json_normalize({v_dados})"]
     if salvar_csv:
-        linhas += ["", 'df.to_csv("dados.csv", index=False, encoding="utf-8-sig")']
+        linhas += ["", f'df.to_csv("{t("code_csv_name")}", index=False, encoding="utf-8-sig")']
     return "\n".join(linhas)
 
 
@@ -701,47 +725,48 @@ def gerar_script_generico(url: str, caminho: str, autenticacao: str, nome_chave:
 
 def _campo(kit: dict, parametro: dict):
     chave = f"kit_{kit['id']}_{parametro['chave']}"
+    rotulo = tr_parametro(kit, parametro, "rotulo")
     tipo = parametro["tipo"]
     if tipo == "data":
-        return st.date_input(parametro["rotulo"], value=dt.date.fromisoformat(parametro["padrao"]),
-                             min_value=dt.date(1950, 1, 1), max_value=dt.date.today(), format="DD/MM/YYYY", key=chave)
+        formato = "DD/MM/YYYY" if lang() == "pt" else "YYYY-MM-DD"
+        return st.date_input(rotulo, value=dt.date.fromisoformat(parametro["padrao"]),
+                             min_value=dt.date(1950, 1, 1), max_value=dt.date.today(), format=formato, key=chave)
     if tipo == "inteiro":
-        return st.number_input(parametro["rotulo"], value=parametro["padrao"], min_value=parametro["min"],
+        return st.number_input(rotulo, value=parametro["padrao"], min_value=parametro["min"],
                                max_value=parametro["max"], step=1, key=chave)
     if tipo == "opcoes":
-        return st.selectbox(parametro["rotulo"], list(parametro["opcoes"]), key=chave)
-    return st.text_input(parametro["rotulo"], value=parametro["padrao"], help=parametro.get("ajuda"), key=chave)
+        rotulos = tr_parametro(kit, parametro, "opcoes")
+        return st.selectbox(rotulo, range(len(rotulos)), format_func=lambda i: rotulos[i], key=keyed(chave))
+    return st.text_input(rotulo, value=parametro["padrao"], help=tr_parametro(kit, parametro, "ajuda"), key=chave)
 
 
 def render_kits() -> None:
+    link = f'<a href="{BI_DATA_GENERATOR_URL}" target="_blank" rel="noopener noreferrer">BI Data Generator</a>'
     st.markdown(
-        '<div class="section-heading"><h2>Kits de projeto para Power BI</h2>'
-        "<span>APIs sem cadastro, com o código pronto</span></div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<p class="kit-intro">Escolha uma API, ajuste os parâmetros e copie a consulta em Power Query ou em Python. '
-        "Cada kit indica como encaixar os dados em um modelo estrela criado no "
-        f'<a href="{BI_DATA_GENERATOR_URL}" target="_blank" rel="noopener noreferrer">BI Data Generator</a>.</p>',
+        f'<div class="section-heading"><h2>{t("kits_title")}</h2><span>{t("kits_sub")}</span></div>'
+        f'<p class="kit-intro">{t("kits_intro", link=link)}</p>',
         unsafe_allow_html=True,
     )
 
-    por_rotulo = {f"{kit['icone']}  {kit['titulo']}": kit for kit in KITS}
-    kit = por_rotulo[st.selectbox("Kit", list(por_rotulo), key="kit_escolhido")]
+    kit = KITS[st.selectbox(
+        t("kit_select"), range(len(KITS)),
+        format_func=lambda i: f"{KITS[i]['icone']}  {tr(KITS[i], 'titulo')}", key=keyed("kit_escolhido"),
+    )]
+    papel = t("role_fact") if kit["papel"] == "Fato" else t("role_dimension")
 
     st.markdown(
         '<div class="kit-card">'
         f'<div class="kit-icon">{kit["icone"]}</div>'
         '<div class="kit-body">'
-        f'<div class="kit-title">{kit["titulo"]}</div>'
-        f'<div class="kit-source">{kit["fonte"]} · <a href="{kit["docs"]}" target="_blank" rel="noopener noreferrer">documentação ↗</a></div>'
-        f'<p>{kit["resumo"]}</p>'
+        f'<div class="kit-title">{tr(kit, "titulo")}</div>'
+        f'<div class="kit-source">{tr(kit, "fonte")} · <a href="{kit["docs"]}" target="_blank" rel="noopener noreferrer">{t("docs")}</a></div>'
+        f'<p>{tr(kit, "resumo")}</p>'
         '<div class="meta-row">'
-        f'<span class="meta-pill status-neutral"><span class="meta-label">Papel</span>{kit["papel"]}</span>'
-        f'<span class="meta-pill status-neutral"><span class="meta-label">Tabela</span>{kit["tabela"]}</span>'
-        '<span class="meta-pill status-good">Sem autenticação</span>'
+        f'<span class="meta-pill status-neutral"><span class="meta-label">{t("role")}</span>{papel}</span>'
+        f'<span class="meta-pill status-neutral"><span class="meta-label">{t("table")}</span>{kit["tabela"]}</span>'
+        f'<span class="meta-pill status-good">{t("no_auth")}</span>'
         "</div>"
-        f'<div class="kit-columns"><span class="meta-label">Colunas</span> {kit["colunas"]}</div>'
+        f'<div class="kit-columns"><span class="meta-label">{t("columns")}</span> {tr(kit, "colunas")}</div>'
         "</div></div>",
         unsafe_allow_html=True,
     )
@@ -755,85 +780,81 @@ def render_kits() -> None:
                 brutos[parametro["chave"]] = _campo(kit, parametro)
     try:
         for parametro in kit["parametros"]:
-            valores.update(validar(parametro, brutos[parametro["chave"]]))
-        checar_intervalos(valores, brutos)
+            valores.update(validar(
+                parametro, brutos[parametro["chave"]],
+                tr_parametro(kit, parametro, "rotulo"), tr_parametro(kit, parametro, "ajuda") or "",
+            ))
+        checar_intervalos(brutos)
     except ValueError as erro:
         st.warning(str(erro))
         return
     if kit.get("observacao"):
-        st.caption(kit["observacao"])
+        st.caption(tr(kit, "observacao"))
 
     codigo_m = preencher(kit["m"], valores)
     codigo_python = preencher(kit["python"], valores)
+    nota_nomes = t("code_names_note")
 
     aba_m, aba_python, aba_modelo, aba_previa = st.tabs(
-        ["Power Query (M)", "Python", "Modelo e ideias", "Prévia dos dados"]
+        [t("tab_m"), t("tab_py"), t("tab_model"), t("tab_preview")]
     )
     with aba_m:
-        st.caption("No Power BI: Obter dados → Consulta em branco → Editor Avançado. Cole o código e renomeie a "
-                   f"consulta para {kit['tabela']}.")
+        st.caption(t("m_how", table=kit["tabela"]))
         st.code(codigo_m, language="powerquery")
-        st.caption("A consulta usa RelativePath e Query, o formato que o Power BI Service aceita na atualização agendada.")
+        st.caption(f'{t("m_note")} {nota_nomes}'.strip())
     with aba_python:
-        st.caption("No Power BI: Obter dados → Script Python. O resultado fica na tabela df. "
-                   "É preciso ter pandas e requests instalados no Python que o Power BI usa.")
+        st.caption(f'{t("py_how")} {nota_nomes}'.strip())
         st.code(codigo_python, language="python")
     with aba_modelo:
-        st.markdown(f'<div class="kit-bridge"><strong>Com o BI Data Generator</strong><p>{kit["ponte"]}</p></div>',
+        st.markdown(f'<div class="kit-bridge"><strong>{t("bridge_title")}</strong><p>{tr(kit, "ponte")}</p></div>',
                     unsafe_allow_html=True)
         esquerda, direita = st.columns(2)
         with esquerda:
-            st.markdown("**Ideias de visuais**")
-            st.markdown("\n".join(f"- {item}" for item in kit["visuais"]))
+            st.markdown(f'**{t("visuals_title")}**')
+            st.markdown("\n".join(f"- {item}" for item in tr(kit, "visuais")))
         with direita:
-            st.markdown("**Medidas DAX para começar**")
-            st.code(kit["dax"], language="dax")
-        st.link_button("Abrir o BI Data Generator ↗", BI_DATA_GENERATOR_URL)
+            st.markdown(f'**{t("dax_title")}**')
+            st.code(tr(kit, "dax"), language="dax")
+        st.link_button(t("open_bdg"), BI_DATA_GENERATOR_URL)
     with aba_previa:
-        st.caption("Roda o script Python deste kit e mostra as primeiras linhas.")
-        if st.button("Carregar prévia", key=f"previa_{kit['id']}"):
+        st.caption(t("preview_caption"))
+        if st.button(t("preview_button"), key=f"previa_{kit['id']}"):
             st.session_state["previa_codigo"] = codigo_python
         if st.session_state.get("previa_codigo") == codigo_python:
             try:
-                with st.spinner("Consultando a API…"):
+                with st.spinner(t("preview_spinner")):
                     tabela = executar_previa(codigo_python)
             except Exception as erro:  # a API pode estar fora do ar ou recusar o período
-                st.error("Não foi possível consultar a API agora. Confira o período escolhido ou tente de novo em instantes.")
-                st.caption(f"Detalhe: {type(erro).__name__}: {str(erro)[:200]}")
+                st.error(t("preview_error"))
+                st.caption(t("preview_detail", detail=f"{type(erro).__name__}: {str(erro)[:200]}"))
             else:
-                st.caption(f"{len(tabela):,} linhas · {len(tabela.columns)} colunas".replace(",", "."))
+                st.caption(t("preview_shape", rows=number(len(tabela)), cols=len(tabela.columns)))
                 st.dataframe(tabela.head(200), use_container_width=True, hide_index=True)
-                st.download_button("Baixar CSV", tabela.to_csv(index=False).encode("utf-8-sig"),
+                st.download_button(t("download_csv"), tabela.to_csv(index=False).encode("utf-8-sig"),
                                    file_name=f"{kit['tabela']}.csv", mime="text/csv", key=f"csv_{kit['id']}")
 
 
 def render_gerador_python() -> None:
     st.markdown(
-        '<div class="section-heading"><h2>Gerador de script Python</h2>'
-        "<span>Para qualquer API do catálogo</span></div>",
+        f'<div class="section-heading"><h2>{t("gen_title")}</h2><span>{t("gen_sub")}</span></div>'
+        f'<p class="kit-intro">{t("gen_intro")}</p>',
         unsafe_allow_html=True,
     )
-    st.markdown(
-        '<p class="kit-intro">Cole a URL de um endpoint que devolve JSON e receba o script em requests + pandas, '
-        "pronto para um notebook ou para o conector Python do Power BI.</p>",
-        unsafe_allow_html=True,
-    )
-    url = st.text_input("URL do endpoint", placeholder="https://api.exemplo.com/v1/dados?ano=2025", key="gerador_url")
+    url = st.text_input(t("gen_url"), placeholder=t("gen_url_ph"), key="gerador_url")
     esquerda, direita = st.columns(2)
     with esquerda:
-        caminho = st.text_input("Onde está a lista de registros (opcional)", placeholder="data.items",
-                                help="Chaves separadas por ponto até a lista dentro do JSON. Deixe vazio se a "
-                                     "resposta já for a lista.", key="gerador_caminho")
-        salvar_csv = st.checkbox("Salvar também em CSV", key="gerador_csv")
+        caminho = st.text_input(t("gen_path"), placeholder="data.items", help=t("gen_path_help"), key="gerador_caminho")
+        salvar_csv = st.checkbox(t("gen_csv"), key="gerador_csv")
     with direita:
-        autenticacao = st.selectbox("Autenticação", ["Nenhuma", "Chave no cabeçalho", "Chave na URL"], key="gerador_auth")
+        autenticacao = st.selectbox(t("gen_auth"), ["none", "header", "query"],
+                                    format_func=lambda codigo: t(f"auth_{codigo}"), key=keyed("gerador_auth"))
         nome_chave = ""
-        if autenticacao != "Nenhuma":
-            exemplo = "X-API-Key" if autenticacao == "Chave no cabeçalho" else "apikey"
-            nome_chave = st.text_input("Nome do cabeçalho ou do parâmetro", placeholder=exemplo, key="gerador_nome_chave")
+        if autenticacao != "none":
+            exemplo = "X-API-Key" if autenticacao == "header" else "apikey"
+            nome_chave = st.text_input(t("gen_key_name"), placeholder=exemplo, key="gerador_nome_chave")
 
     if not url.strip():
-        st.caption("O endereço do endpoint está na documentação de cada API do catálogo.")
+        st.caption(t("gen_hint"))
         return
     try:
         codigo = gerar_script_generico(url, caminho, autenticacao, nome_chave, salvar_csv)
@@ -841,13 +862,10 @@ def render_gerador_python() -> None:
         st.warning(str(erro))
         return
     st.code(codigo, language="python")
-    dica = "No Power BI: Obter dados → Script Python. O resultado fica na tabela df."
-    if autenticacao != "Nenhuma":
-        dica += " Troque COLE_SUA_CHAVE_AQUI pela sua chave antes de rodar."
+    dica = t("gen_how")
+    if autenticacao != "none":
+        dica += " " + t("gen_swap_key", placeholder=t("code_key_placeholder"))
     st.caption(dica)
-    st.markdown(
-        '<div class="kit-bridge"><strong>Próximo passo</strong><p>Com os dados carregados, gere a tabela calendário '
-        "e as medidas DAX no BI Data Generator para fechar o modelo estrela.</p></div>",
-        unsafe_allow_html=True,
-    )
-    st.link_button("Abrir o BI Data Generator ↗", BI_DATA_GENERATOR_URL)
+    st.markdown(f'<div class="kit-bridge"><strong>{t("next_title")}</strong><p>{t("next_text")}</p></div>',
+                unsafe_allow_html=True)
+    st.link_button(t("open_bdg"), BI_DATA_GENERATOR_URL)

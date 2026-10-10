@@ -15,12 +15,27 @@ Diretório de APIs públicas construído com Python e Streamlit, inspirado no la
 - **Gerador Python:** cole a URL de qualquer endpoint JSON e receba o script em `requests` + `pandas`, com opção de chave de API.
 - CSS separado, configuração do tema Streamlit e estrutura pronta para GitHub/Streamlit Community Cloud.
 
+## Idiomas (i18n)
+
+A interface está em português e inglês. O idioma inicial é escolhido nesta ordem:
+
+1. `?lang=pt` ou `?lang=en` na URL (útil para compartilhar o link já no idioma certo);
+2. idioma do navegador;
+3. país de acesso, pelo cabeçalho `CF-IPCountry` da Cloudflare (só existe se o app estiver atrás da Cloudflare);
+4. inglês.
+
+O visitante pode trocar o idioma no seletor do topo. Para adicionar um idioma, inclua o código em `SUPPORTED` e as traduções em `STRINGS` no `i18n.py`, e os textos dos kits em `kits_i18n.py`. O que não for traduzido aparece em inglês (interface) ou em português (kits).
+
+Descrições e categorias do catálogo vêm do repositório de origem e ficam em inglês. O código gerado pelos kits usa nomes de tabelas e colunas em português nos dois idiomas.
+
 ## Estrutura
 
 ```text
 api_atlas_streamlit/
 ├── app.py
 ├── kits.py
+├── kits_i18n.py
+├── i18n.py
 ├── style.css
 ├── requirements.txt
 ├── README.md
