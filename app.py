@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import re
+from html import escape
 from pathlib import Path
-from urllib.parse import urlparse
 
 import pandas as pd
 import requests
 import streamlit as st
 
 ROOT = Path(__file__).parent
+PAGE_SIZE = 24
 st.set_page_config(
     page_title="API Atlas — Free Public APIs",
     page_icon="🌐",
@@ -173,38 +174,54 @@ def meta_badge(label: str, value: str) -> str:
         status_class = "status-warn"
     return f'<span class="meta-pill {status_class}"><span class="meta-label">{label}</span>{value}</span>'
 
-def render_card(name: str, description: str, category: str, auth: str, https: str, cors: str, url: str) -> None:
-    safe_name = name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    safe_desc = description.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    safe_cat = category.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    title = f'<a href="{url}" target="_blank" rel="noopener noreferrer">{safe_name} ↗</a>' if url.startswith("https://") or url.startswith("http://") else safe_name
-    st.markdown(
-        f"""
-        <article class="api-card">
-          <div class="api-card-top">
-            <div class="api-icon">{safe_name[:1].upper()}</div>
-            <div class="api-heading">
-              <div class="api-name">{title}</div>
-              <div class="api-category">{safe_cat}</div>
-            </div>
-          </div>
-          <p class="api-description">{safe_desc or "No description available."}</p>
-          <div class="meta-row">
-            {meta_badge("Auth", auth)}
-            {meta_badge("HTTPS", https)}
-            {meta_badge("CORS", cors)}
-          </div>
-        </article>
-        """,
-        unsafe_allow_html=True,
+def text(value: str) -> str:
+    # "$" is escaped so Streamlit does not read it as a math formula.
+    return escape(value).replace("$", "&#36;")
+
+def card_html(item) -> str:
+    name = text(str(item["name"]))
+    url = str(item["url"])
+    if url.startswith(("https://", "http://")):
+        title = f'<a href="{escape(url, quote=True)}" target="_blank" rel="noopener noreferrer">{name} ↗</a>'
+    else:
+        title = name
+    return (
+        '<article class="api-card">'
+        '<div class="api-card-top">'
+        f'<div class="api-icon">{name[:1].upper()}</div>'
+        '<div class="api-heading">'
+        f'<div class="api-name">{title}</div>'
+        f'<div class="api-category">{text(str(item["category"]))}</div>'
+        "</div></div>"
+        f'<p class="api-description">{text(str(item["description"])) or "No description available."}</p>'
+        '<div class="meta-row">'
+        + meta_badge("Auth", str(item["auth"]))
+        + meta_badge("HTTPS", str(item["https"]))
+        + meta_badge("CORS", str(item["cors"]))
+        + "</div></article>"
     )
+
+def render_grid(items: pd.DataFrame, view: str) -> None:
+    """Three-column card grid, shown one page at a time."""
+    if st.session_state.get("grid_view") != view:
+        st.session_state["grid_view"] = view
+        st.session_state["grid_limit"] = PAGE_SIZE
+    limit = st.session_state["grid_limit"]
+    items = items.sort_values("name", key=lambda col: col.str.casefold())
+    cards = "".join(card_html(item) for _, item in items.head(limit).iterrows())
+    st.markdown(f'<div class="api-grid">{cards}</div>', unsafe_allow_html=True)
+    if limit < len(items):
+        _, middle, _ = st.columns([2, 1, 2])
+        if middle.button(f"Load more  ·  {len(items) - limit} left", key="load_more", use_container_width=True):
+            st.session_state["grid_limit"] = limit + PAGE_SIZE
+            st.rerun()
 
 # Header / search
 st.markdown(
     """
     <div class="hero">
       <div class="eyebrow"><span class="eyebrow-dot"></span> THE OPEN API DIRECTORY</div>
-      <h1>A world of APIs.<br><span>One search away.</span></h1>
+      <h1>A world of APIs.<br><span class="soft">One search away.</span></h1>
       <p class="hero-subtitle">A collective list of free APIs for software and web development.</p>
     </div>
     """,
@@ -212,7 +229,7 @@ st.markdown(
 )
 search = st.text_input(
     "Search APIs",
-    placeholder="⌕   Find development, games, images APIs...",
+    placeholder="Find development, games, images APIs...",
     label_visibility="collapsed",
     key="global_search",
 )
@@ -240,8 +257,7 @@ if query:
     if results.empty:
         st.markdown('<div class="empty-state"><div class="empty-icon">⌕</div><h3>No APIs found</h3><p>Try another name or keyword.</p></div>', unsafe_allow_html=True)
     else:
-        for _, item in results.sort_values("name", key=lambda col: col.str.casefold()).iterrows():
-            render_card(str(item["name"]), str(item["description"]), str(item["category"]), str(item["auth"]), str(item["https"]), str(item["cors"]), str(item["url"]))
+        render_grid(results, f"search:{query}")
 else:
     st.markdown('<div class="section-heading"><h2>Featured APIs</h2><span>A few places to start exploring</span></div>', unsafe_allow_html=True)
     featured_cols = st.columns(3, gap="medium")
@@ -274,10 +290,9 @@ else:
 
         selected = st.session_state.get("selected_category")
         if selected:
-            st.markdown(f'<div class="section-heading category-results"><h2>{selected}</h2><span>{int(category_counts.get(selected, 0))} APIs</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-heading category-results"><h2>{text(selected)}</h2><span>{int(category_counts.get(selected, 0))} APIs</span></div>', unsafe_allow_html=True)
             subset = apis[apis["category"] == selected]
-            for _, item in subset.sort_values("name", key=lambda col: col.str.casefold()).iterrows():
-                render_card(str(item["name"]), str(item["description"]), str(item["category"]), str(item["auth"]), str(item["https"]), str(item["cors"]), str(item["url"]))
+            render_grid(subset, f"category:{selected}")
             if st.button("← Back to all categories", key="back_categories"):
                 st.session_state.pop("selected_category", None)
                 st.rerun()
