@@ -14,7 +14,7 @@ html, body, [data-testid="stAppViewContainer"] {
 [data-testid="stHeader"] { background: rgba(248,249,252,.94); }
 [data-testid="stToolbar"] { right: 1rem; }
 .block-container { max-width: 1080px !important; padding-top: 2.4rem !important; }
-#MainMenu, footer { visibility: hidden; }
+#MainMenu { visibility: hidden; }
 .hero { text-align: center; padding: 2.2rem 0 1.35rem; }
 .eyebrow {
   display: inline-flex; align-items: center; gap: .5rem; color: #6c63ff;
@@ -22,15 +22,28 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 .eyebrow-dot { width: 7px; height: 7px; background: #6c63ff; border-radius: 50%; display: inline-block; }
 .hero h1 { font-size: clamp(2.35rem, 5vw, 3.55rem); line-height: 1.04; letter-spacing: -.055em; font-weight: 800; color: #171a2e; margin: 0 0 1rem; }
-.hero h1 span { color: #777d8e; }
-.hero-subtitle { color: #777d8e; font-size: 1.05rem; margin: 0 auto; max-width: 520px; }
+.hero h1 { color: #171a2e !important; }
+.hero h1 .soft { color: #777d8e; }
+.hero-subtitle { color: #777d8e; font-size: 1.05rem; margin: 0 auto !important; max-width: 520px; text-align: center; }
 div[data-testid="stTextInput"] { max-width: 640px; margin: .5rem auto 3rem; }
-div[data-testid="stTextInput"] input {
-  min-height: 3.6rem; border-radius: 999px; border: 1px solid #e1e4ec;
-  background: #fff; padding: 0 1.45rem; font-size: 1rem; color: #171a2e;
-  box-shadow: 0 6px 22px rgba(27, 36, 78, .035);
+/* The pill is drawn on the wrapper; both selectors are needed because
+   Streamlit changed the field markup between versions. */
+div[data-testid="stTextInput"] [data-testid="stTextInputRootElement"],
+div[data-testid="stTextInput"] div[data-baseweb="input"] {
+  height: auto; overflow: hidden; border-radius: 999px; border: 1px solid #e1e4ec;
+  background: #fff; box-shadow: 0 6px 22px rgba(27, 36, 78, .035);
 }
-div[data-testid="stTextInput"] input:focus { border-color: #a9a4ff; box-shadow: 0 0 0 3px rgba(108,99,255,.1); }
+div[data-testid="stTextInput"] [data-testid="stTextInputRootElement"]:focus-within,
+div[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within {
+  border-color: #a9a4ff; box-shadow: 0 0 0 3px rgba(108,99,255,.1);
+}
+div[data-testid="stTextInput"] div[data-baseweb="base-input"] { background: transparent; }
+div[data-testid="stTextInput"] input {
+  height: 3.6rem; min-height: 3.6rem; padding: 0 1.45rem 0 3.6rem; font-size: 1rem; color: #171a2e;
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22' fill='none' stroke='%238b90a0' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='9.5' cy='9.5' r='6.5'/%3E%3Cpath d='m14.5 14.5 5 5'/%3E%3C/svg%3E") no-repeat 1.4rem center;
+}
+div[data-testid="stTextInput"] input::placeholder { color: #8b90a0; opacity: 1; }
+div[data-testid="InputInstructions"] { display: none; }
 .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin: .5rem 0 1.15rem; }
 .section-heading h2 { font-size: 1.15rem; letter-spacing: -.025em; font-weight: 800; margin: 0; color: #171a2e; }
 .section-heading > span { color: #8b90a0; font-size: .82rem; }
@@ -52,14 +65,16 @@ div[data-testid="stButton"] button {
   min-height: 2.65rem; font-size: .82rem; font-weight: 600; transition: all .15s ease;
 }
 div[data-testid="stButton"] button:hover { color: #6258f5; border-color: #c8c4ff; background: #f8f7ff; }
-.api-card { background: #fff; border: 1px solid #eceef4; border-radius: 13px; padding: 1.2rem 1.3rem; margin: .7rem 0; box-shadow: 0 8px 24px rgba(35,44,85,.035); }
+.api-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .95rem; margin-bottom: 1.2rem; }
+.api-card { display: flex; flex-direction: column; min-width: 0; background: #fff; border: 1px solid #eceef4; border-radius: 13px; padding: 1.2rem 1.3rem; box-shadow: 0 8px 24px rgba(35,44,85,.035); }
 .api-card-top { display: flex; gap: .85rem; align-items: center; }
-.api-icon { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg,#6c63ff,#9a92ff); color: #fff; font-weight: 800; font-size: 1.1rem; }
-.api-name { color: #171a2e; font-size: 1rem; font-weight: 800; }
+.api-icon { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg,#6c63ff,#9a92ff); color: #fff; font-weight: 800; font-size: 1.1rem; }
+.api-heading { min-width: 0; }
+.api-name { color: #171a2e; font-size: 1rem; font-weight: 800; overflow-wrap: anywhere; }
 .api-name a { color: inherit; text-decoration: none; }
 .api-name a:hover { color: #6c63ff; }
 .api-category { color: #858a99; font-size: .76rem; margin-top: .15rem; }
-.api-description { color: #555b6c; font-size: .9rem; line-height: 1.55; margin: .9rem 0 1rem; }
+.api-description { flex: 1; color: #555b6c; font-size: .9rem; line-height: 1.55; margin: .9rem 0 1rem; overflow-wrap: anywhere; }
 .meta-row { display: flex; flex-wrap: wrap; gap: .4rem; }
 .meta-pill { display: inline-flex; gap: .35rem; align-items: center; border: 1px solid #e8eaf0; border-radius: 999px; padding: .28rem .65rem; color: #555b6c; font-size: .73rem; background: #fbfbfd; }
 .meta-label { color: #8a8fa0; }
@@ -74,7 +89,9 @@ div[data-testid="stButton"] button:hover { color: #6258f5; border-color: #c8c4ff
 .site-footer div { display: flex; flex-direction: column; gap: .2rem; }
 .site-footer strong { color: #25293b; font-size: .9rem; }
 .site-footer a { color: #6c63ff; }
+@media (max-width: 1000px) { .api-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) {
+  .api-grid { grid-template-columns: 1fr; }
   .block-container { padding-left: 1rem !important; padding-right: 1rem !important; padding-top: 1rem !important; }
   .hero { padding-top: 1.2rem; }
   .hero-subtitle { font-size: .92rem; }
