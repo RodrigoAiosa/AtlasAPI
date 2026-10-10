@@ -8,6 +8,8 @@ import pandas as pd
 import requests
 import streamlit as st
 
+import kits
+
 ROOT = Path(__file__).parent
 PAGE_SIZE = 24
 st.set_page_config(
@@ -248,69 +250,78 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True,
 )
-search = st.text_input(
-    "Search APIs",
-    placeholder="Find development, games, images APIs...",
-    label_visibility="collapsed",
-    key="global_search",
-)
+tab_catalog, tab_kits, tab_python = st.tabs(["API catalog", "Kits Power BI", "Gerador Python"])
 
-if source_error:
-    st.error(source_error)
-    st.info("Confira a conexão com a internet. O catálogo é obtido diretamente do GitHub.")
+with tab_kits:
+    kits.render_kits()
 
-# Search intentionally takes precedence over category selection and searches the full catalog.
-query = search.strip().casefold()
-if query:
-    fields = ["name", "description", "category", "auth", "https", "cors"]
-    searchable = apis[fields].fillna("").astype(str)
-    mask = searchable.apply(lambda col: col.str.casefold().str.contains(re.escape(query), na=False)).any(axis=1)
-    results = apis[mask].copy()
-    st.markdown(f'<div class="section-heading"><h2>Search results</h2><span>{len(results)} APIs found</span></div>', unsafe_allow_html=True)
-    if results.empty:
-        st.markdown('<div class="empty-state"><div class="empty-icon">⌕</div><h3>No APIs found</h3><p>Try another name or keyword.</p></div>', unsafe_allow_html=True)
+with tab_python:
+    kits.render_gerador_python()
+
+with tab_catalog:
+    search = st.text_input(
+        "Search APIs",
+        placeholder="Find development, games, images APIs...",
+        label_visibility="collapsed",
+        key="global_search",
+    )
+
+    if source_error:
+        st.error(source_error)
+        st.info("Confira a conexão com a internet. O catálogo é obtido diretamente do GitHub.")
+
+    # Search intentionally takes precedence over category selection and searches the full catalog.
+    query = search.strip().casefold()
+    if query:
+        fields = ["name", "description", "category", "auth", "https", "cors"]
+        searchable = apis[fields].fillna("").astype(str)
+        mask = searchable.apply(lambda col: col.str.casefold().str.contains(re.escape(query), na=False)).any(axis=1)
+        results = apis[mask].copy()
+        st.markdown(f'<div class="section-heading"><h2>Search results</h2><span>{len(results)} APIs found</span></div>', unsafe_allow_html=True)
+        if results.empty:
+            st.markdown('<div class="empty-state"><div class="empty-icon">⌕</div><h3>No APIs found</h3><p>Try another name or keyword.</p></div>', unsafe_allow_html=True)
+        else:
+            render_grid(results, f"search:{query}")
     else:
-        render_grid(results, f"search:{query}")
-else:
-    st.markdown('<div class="section-heading"><h2>Featured APIs</h2><span>A few places to start exploring</span></div>', unsafe_allow_html=True)
-    featured_cols = st.columns(3, gap="medium")
-    for idx, item in enumerate(FEATURED):
-        with featured_cols[idx % 3]:
-            st.markdown(
-                f"""
-                <a class="featured-card" href="{item['url']}" target="_blank" rel="noopener noreferrer">
-                  <div class="featured-icon">{item['icon']}</div>
-                  <div class="featured-content">
-                    <div class="featured-name">{item['name']}</div>
-                    <div class="featured-category">{item['category']}</div>
-                    <p>{item['description']}</p>
-                    <span class="featured-link">API documentation ↗</span>
-                  </div>
-                </a>
-                """,
-                unsafe_allow_html=True,
-            )
+        st.markdown('<div class="section-heading"><h2>Featured APIs</h2><span>A few places to start exploring</span></div>', unsafe_allow_html=True)
+        featured_cols = st.columns(3, gap="medium")
+        for idx, item in enumerate(FEATURED):
+            with featured_cols[idx % 3]:
+                st.markdown(
+                    f"""
+                    <a class="featured-card" href="{item['url']}" target="_blank" rel="noopener noreferrer">
+                      <div class="featured-icon">{item['icon']}</div>
+                      <div class="featured-content">
+                        <div class="featured-name">{item['name']}</div>
+                        <div class="featured-category">{item['category']}</div>
+                        <p>{item['description']}</p>
+                        <span class="featured-link">API documentation ↗</span>
+                      </div>
+                    </a>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-    st.markdown('<div class="section-heading categories-heading"><h2>Browse by category</h2><span>Explore the full collection</span></div>', unsafe_allow_html=True)
-    if not apis.empty:
-        category_counts = apis.groupby("category").size().sort_index(key=lambda idx: idx.str.casefold())
-        cols = st.columns(4, gap="small")
-        for idx, (category, count) in enumerate(category_counts.items()):
-            with cols[idx % 4]:
-                if st.button(f"{category}  ·  {count}", key=f"category_{slug(str(category))}", use_container_width=True):
-                    st.session_state["selected_category"] = str(category)
+        st.markdown('<div class="section-heading categories-heading"><h2>Browse by category</h2><span>Explore the full collection</span></div>', unsafe_allow_html=True)
+        if not apis.empty:
+            category_counts = apis.groupby("category").size().sort_index(key=lambda idx: idx.str.casefold())
+            cols = st.columns(4, gap="small")
+            for idx, (category, count) in enumerate(category_counts.items()):
+                with cols[idx % 4]:
+                    if st.button(f"{category}  ·  {count}", key=f"category_{slug(str(category))}", use_container_width=True):
+                        st.session_state["selected_category"] = str(category)
+                        st.rerun()
+
+            selected = st.session_state.get("selected_category")
+            if selected:
+                st.markdown(f'<div class="section-heading category-results"><h2>{text(selected)}</h2><span>{int(category_counts.get(selected, 0))} APIs</span></div>', unsafe_allow_html=True)
+                subset = apis[apis["category"] == selected]
+                render_grid(subset, f"category:{selected}")
+                if st.button("← Back to all categories", key="back_categories"):
+                    st.session_state.pop("selected_category", None)
                     st.rerun()
-
-        selected = st.session_state.get("selected_category")
-        if selected:
-            st.markdown(f'<div class="section-heading category-results"><h2>{text(selected)}</h2><span>{int(category_counts.get(selected, 0))} APIs</span></div>', unsafe_allow_html=True)
-            subset = apis[apis["category"] == selected]
-            render_grid(subset, f"category:{selected}")
-            if st.button("← Back to all categories", key="back_categories"):
-                st.session_state.pop("selected_category", None)
-                st.rerun()
-    else:
-        st.caption("As categorias serão exibidas quando o catálogo do GitHub estiver disponível.")
+        else:
+            st.caption("As categorias serão exibidas quando o catálogo do GitHub estiver disponível.")
 
 st.markdown(
     """
