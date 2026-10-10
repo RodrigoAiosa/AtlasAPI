@@ -5,7 +5,7 @@ Diretório de APIs públicas construído com Python e Streamlit, inspirado no la
 ## Recursos
 
 - Pesquisa global fixa no topo da página.
-- Catálogo obtido do README do repositório `public-apis/public-apis` no GitHub.
+- Catálogo reunido de três repositórios do GitHub (`public-apis/public-apis`, `marcelscruz/public-apis` e `public-api-lists/public-api-lists`), sem duplicatas.
 - Busca por nome, descrição, categoria e metadados.
 - Navegação por categorias com contagem de APIs.
 - Cards com nome, descrição, autenticação, HTTPS e CORS.
@@ -33,6 +33,7 @@ As categorias e as descrições das APIs são traduzidas pelo arquivo `catalog_p
 ```text
 api_atlas_streamlit/
 ├── app.py
+├── catalog.py
 ├── kits.py
 ├── kits_i18n.py
 ├── i18n.py
@@ -72,6 +73,12 @@ streamlit run app.py
 
 ## Fonte e observações
 
-Fonte: https://github.com/public-apis/public-apis
+Fontes do catálogo:
+
+- https://github.com/public-apis/public-apis (principal)
+- https://github.com/marcelscruz/public-apis
+- https://github.com/public-api-lists/public-api-lists
+
+As duas últimas só acrescentam APIs que ainda não estão no catálogo (mesmo nome, mesmo endereço ou mesmo domínio contam como duplicata). Se uma delas ficar fora do ar, o site segue funcionando com as demais. A leitura e a união das fontes ficam em `catalog.py`.
 
 A aplicação percorre as tabelas de todas as categorias no README upstream e carrega todas as entradas encontradas. A lista de APIs em destaque na página inicial é uma seleção editorial; o catálogo completo, a busca global e os resultados por categoria vêm do repositório upstream. Autenticação, HTTPS e CORS podem mudar e devem ser confirmados na documentação oficial de cada API.
