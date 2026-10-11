@@ -174,3 +174,8 @@ DIVIDE ( [Faturamento], [População] )''',
         },
     },
 }
+
+# Kits do IBGE gerados em kits_ibge.py.
+from kits_ibge import KITS_EN as _IBGE_EN  # noqa: E402
+
+KITS["en"].update(_IBGE_EN)

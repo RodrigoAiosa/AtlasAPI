@@ -14,6 +14,7 @@ import pandas as pd
 import streamlit as st
 
 import kits_i18n
+import kits_ibge
 from i18n import keyed, lang, number, t
 
 BI_DATA_GENERATOR_URL = "https://ai-bidatagenerator.streamlit.app/"
@@ -680,6 +681,9 @@ resposta.raise_for_status()
 df = pd.DataFrame(resposta.json()["dados"])''',
     },
 ]
+
+
+KITS.extend(kits_ibge.KITS)
 
 
 # ---------- Tradução ----------
