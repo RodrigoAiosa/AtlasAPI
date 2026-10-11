@@ -166,7 +166,7 @@ with tab_catalog:
         searchable["category_local"] = searchable["category"].map(i18n.category)
         mask = searchable.apply(lambda col: col.str.casefold().str.contains(re.escape(query), na=False)).any(axis=1)
         results = apis[mask].copy()
-        st.markdown(f'<div class="section-heading"><h2>{t("results_title")}</h2><span>{t("results_count", n=i18n.number(len(results)))}</span></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="section-heading"><h2>{t("results_title")}</h2><span>{t("results_count_one") if len(results) == 1 else t("results_count", n=i18n.number(len(results)))}</span></div>', unsafe_allow_html=True)
         if results.empty:
             st.markdown(f'<div class="empty-state"><div class="empty-icon">⌕</div><h3>{t("empty_title")}</h3><p>{t("empty_text")}</p></div>', unsafe_allow_html=True)
         else:
