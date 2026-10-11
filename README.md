@@ -5,7 +5,7 @@ Diretório de APIs públicas construído com Python e Streamlit, inspirado no la
 ## Recursos
 
 - Pesquisa global fixa no topo da página.
-- Catálogo reunido de três repositórios do GitHub (`public-apis/public-apis`, `marcelscruz/public-apis` e `public-api-lists/public-api-lists`), sem duplicatas.
+- Catálogo reunido de sete repositórios do GitHub (lista em "Fontes do catálogo"), sem duplicatas.
 - Busca por nome, descrição, categoria e metadados.
 - Navegação por categorias com contagem de APIs.
 - Cards com nome, descrição, autenticação, HTTPS e CORS.
@@ -38,6 +38,7 @@ api_atlas_streamlit/
 ├── kits_i18n.py
 ├── i18n.py
 ├── catalog_pt.json
+├── catalog_en.json
 ├── style.css
 ├── requirements.txt
 ├── README.md
@@ -78,7 +79,11 @@ Fontes do catálogo:
 - https://github.com/public-apis/public-apis (principal)
 - https://github.com/marcelscruz/public-apis
 - https://github.com/public-api-lists/public-api-lists
+- https://github.com/IF-TI/APIs-PublicasBrasil (APIs brasileiras; descrições originais em português, traduzidas para o inglês em `catalog_en.json`)
+- https://github.com/n0shake/Public-APIs
+- https://github.com/APIs-guru/graphql-apis (categoria GraphQL)
+- https://github.com/jdorfman/awesome-json-datasets (endereços que devolvem JSON sem autenticação)
 
-As duas últimas só acrescentam APIs que ainda não estão no catálogo (mesmo nome, mesmo endereço ou mesmo domínio contam como duplicata). Se uma delas ficar fora do ar, o site segue funcionando com as demais. A leitura e a união das fontes ficam em `catalog.py`.
+As fontes extras só acrescentam APIs que ainda não estão no catálogo (mesmo nome, mesmo endereço ou mesmo domínio contam como duplicata). Itens de conteúdo adulto são descartados. Se uma delas ficar fora do ar, o site segue funcionando com as demais. A leitura e a união das fontes ficam em `catalog.py`.
 
 A aplicação percorre as tabelas de todas as categorias no README upstream e carrega todas as entradas encontradas. A lista de APIs em destaque na página inicial é uma seleção editorial; o catálogo completo, a busca global e os resultados por categoria vêm do repositório upstream. Autenticação, HTTPS e CORS podem mudar e devem ser confirmados na documentação oficial de cada API.
