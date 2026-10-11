@@ -258,6 +258,81 @@ resposta.raise_for_status()
 df = pd.DataFrame(resposta.json())''',
     },
     {
+        "id": "populacao",
+        "icone": "👥",
+        "titulo": "População por município",
+        "fonte": "IBGE (SIDRA, tabela 6579)",
+        "docs": "https://sidra.ibge.gov.br/tabela/6579",
+        "resumo": "População residente estimada de cada município do Brasil em um ano.",
+        "papel": "Fato",
+        "tabela": "fPopulacao",
+        "colunas": "municipio_id, municipio, uf, ano, populacao",
+        "parametros": [
+            {"chave": "PERIODO", "rotulo": "Ano", "tipo": "opcoes", "opcoes": {
+                "Mais recente": "last", "2025": "2025", "2024": "2024", "2021": "2021",
+                "2020": "2020", "2019": "2019", "2018": "2018"}},
+        ],
+        "observacao": "São cerca de 5.570 linhas por ano. O IBGE não publicou estimativas para 2022 e 2023; "
+                      "para 2022 vale o Censo. A consulta pode levar alguns segundos.",
+        "ponte": "Relacione com o kit Municípios do Brasil pelo código do município (municipio_id) e use a "
+                 "população para calcular indicadores por habitante sobre uma base gerada no BI Data Generator, "
+                 "como faturamento per capita por cidade ou UF.",
+        "visuais": ["Mapa de municípios com bolhas pelo tamanho da população", "Ranking das 20 maiores cidades",
+                    "Faturamento por habitante por UF"],
+        "dax": '''População = SUM ( fPopulacao[populacao] )
+
+-- Supondo uma medida [Faturamento] no seu modelo
+Faturamento per Capita =
+DIVIDE ( [Faturamento], [População] )''',
+        "m": '''let
+    Periodo = "«PERIODO»",
+    Fonte = Json.Document(Web.Contents("https://apisidra.ibge.gov.br", [
+        RelativePath = "values/t/6579/n6/all/v/9324/p/" & Periodo
+    ])),
+    // A primeira linha da resposta traz os nomes das colunas.
+    Tabela = Table.PromoteHeaders(Table.FromRecords(Fonte), [PromoteAllScalars = true]),
+    Colunas = Table.SelectColumns(Tabela, {"Município (Código)", "Município", "Ano", "Valor"}),
+    Renomeada = Table.RenameColumns(Colunas, {
+        {"Município (Código)", "municipio_id"},
+        {"Município", "municipio_uf"},
+        {"Ano", "ano"},
+        {"Valor", "populacao"}
+    }),
+    // O nome vem como "São Paulo (SP)".
+    ComMunicipio = Table.AddColumn(Renomeada, "municipio", each Text.BeforeDelimiter([municipio_uf], " (", {0, RelativePosition.FromEnd}), type text),
+    ComUF = Table.AddColumn(ComMunicipio, "uf", each Text.BetweenDelimiters([municipio_uf], "(", ")", {0, RelativePosition.FromEnd}, 0), type text),
+    Numeros = Table.TransformColumns(ComUF, {
+        {"municipio_id", Int64.From, Int64.Type},
+        {"ano", Int64.From, Int64.Type},
+        {"populacao", each try Int64.From(_) otherwise null, Int64.Type}
+    }),
+    Resultado = Table.SelectColumns(Numeros, {"municipio_id", "municipio", "uf", "ano", "populacao"})
+in
+    Resultado''',
+        "python": '''import pandas as pd
+import requests
+
+PERIODO = "«PERIODO»"  # um ano, como "2025", ou "last" para o mais recente
+
+resposta = requests.get(
+    f"https://apisidra.ibge.gov.br/values/t/6579/n6/all/v/9324/p/{PERIODO}",
+    timeout=120,
+)
+resposta.raise_for_status()
+dados = resposta.json()
+
+# A primeira linha da resposta traz os nomes das colunas.
+df = pd.DataFrame(dados[1:]).rename(columns=dados[0])
+df = df[["Município (Código)", "Município", "Ano", "Valor"]]
+df.columns = ["municipio_id", "municipio_uf", "ano", "populacao"]
+# O nome vem como "São Paulo (SP)".
+df[["municipio", "uf"]] = df["municipio_uf"].str.extract(r"^(.*) \\((\\w{2})\\)$")
+df["municipio_id"] = df["municipio_id"].astype(int)
+df["ano"] = df["ano"].astype(int)
+df["populacao"] = pd.to_numeric(df["populacao"], errors="coerce").astype("Int64")
+df = df[["municipio_id", "municipio", "uf", "ano", "populacao"]]''',
+    },
+    {
         "id": "clima",
         "icone": "🌦️",
         "titulo": "Clima histórico",
