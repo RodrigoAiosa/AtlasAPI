@@ -1,54 +1,112 @@
-# API Atlas — Public API Directory
+# API Atlas
 
-Diretório de APIs públicas construído com Python e Streamlit, inspirado no layout de referência enviado.
+Diretório de APIs públicas e gratuitas, com consultas prontas para Power BI. Feito em Python com Streamlit.
 
-## Recursos
+**Acesse:** https://atlasapi.streamlit.app/
 
-- Pesquisa global fixa no topo da página.
-- Catálogo reunido de sete repositórios do GitHub (lista em "Fontes do catálogo"), sem duplicatas.
-- Busca por nome, descrição, categoria e metadados.
-- Navegação por categorias com contagem de APIs.
-- Cards com nome, descrição, autenticação, HTTPS e CORS.
-- Links para documentação quando disponíveis.
-- Cache por 30 minutos para reduzir chamadas ao GitHub.
-- **Kits Power BI:** 22 kits de APIs sem autenticação (13 deles do IBGE, gerados em `kits_ibge.py`) com consulta pronta em Power Query (M) e em Python, parâmetros ajustáveis, prévia dos dados, ideias de visuais, medidas DAX e a ponte com o [BI Data Generator](https://ai-bidatagenerator.streamlit.app/).
-- **Gerador Python:** cole a URL de qualquer endpoint JSON e receba o script em `requests` + `pandas`, com opção de chave de API.
-- CSS separado, configuração do tema Streamlit e estrutura pronta para GitHub/Streamlit Community Cloud.
+Em outubro de 2026 o catálogo reúne mais de 3.100 APIs em 56 categorias. Os números aparecem no topo do site e mudam sozinhos conforme as fontes são atualizadas.
 
-## Idiomas (i18n)
+## O que o site oferece
 
-A interface está em português e inglês. O idioma inicial é escolhido nesta ordem:
+O site tem três abas.
 
-1. `?lang=pt` ou `?lang=en` na URL (útil para compartilhar o link já no idioma certo);
+### Catálogo de APIs
+
+- Busca global por nome, descrição, categoria e autenticação, em português e em inglês.
+- Navegação por categoria, com a quantidade de APIs em cada uma.
+- Cartões em grade com descrição, autenticação, HTTPS, CORS e link para a documentação.
+- Resultados paginados de 24 em 24.
+
+### Kits Power BI
+
+22 kits de APIs que não exigem cadastro nem chave. Em cada kit a pessoa ajusta os parâmetros (período, cidade, moeda, produto) e recebe:
+
+- a consulta em **Power Query (M)**, com colunas nomeadas e tipadas, no formato `RelativePath` que o Power BI Service aceita na atualização agendada;
+- o mesmo resultado em **Python** (`requests` + `pandas`);
+- uma **prévia dos dados**, com download em CSV;
+- o papel da tabela no modelo (fato ou dimensão), ideias de visuais e medidas DAX iniciais;
+- como combinar os dados com uma base criada no [BI Data Generator](https://ai-bidatagenerator.streamlit.app/).
+
+| Tema | Kits | Fonte |
+|---|---|---|
+| Economia do Brasil | Selic, IPCA e dólar | Banco Central (SGS) |
+| | IPCA: inflação mensal · INPC: inflação mensal · PIB trimestral do Brasil · Vendas do comércio varejista · Produção industrial | IBGE (SIDRA) |
+| Trabalho e renda | Taxa de desemprego por UF · Rendimento médio do trabalho | IBGE (SIDRA) |
+| Municípios | Municípios do Brasil · População por município · Censo 2022: população, área e densidade · PIB dos municípios · Taxa de alfabetização por município | IBGE |
+| Agronegócio | Produção agrícola por UF · Rebanhos por UF | IBGE (SIDRA) |
+| Calendário e clima | Feriados nacionais · Clima histórico | BrasilAPI · Open-Meteo |
+| Política | Deputados federais | Câmara dos Deputados |
+| Internacional | Câmbio diário · Indicadores de países · Países · Terremotos no mundo | Frankfurter · Banco Mundial · USGS |
+
+Os kits por município usam o código IBGE do município (`municipio_id`) e se relacionam entre si por ele.
+
+### Gerador Python
+
+Para as demais APIs do catálogo: cole a URL de um endpoint que devolve JSON e receba o script em `requests` + `pandas`, com opção de chave de API no cabeçalho ou na URL.
+
+## Idiomas
+
+A interface está em português e em inglês, com seletor no topo. O idioma inicial é escolhido nesta ordem:
+
+1. `?lang=pt` ou `?lang=en` na URL, útil para compartilhar o link já no idioma certo;
 2. idioma do navegador;
 3. país de acesso, pelo cabeçalho `CF-IPCountry` da Cloudflare (só existe se o app estiver atrás da Cloudflare);
 4. inglês.
 
-O visitante pode trocar o idioma no seletor do topo. Para adicionar um idioma, inclua o código em `SUPPORTED` e as traduções em `STRINGS` no `i18n.py`, e os textos dos kits em `kits_i18n.py`. O que não for traduzido aparece em inglês (interface) ou em português (kits).
+O que é traduzido:
 
-As categorias e as descrições das APIs são traduzidas pelo arquivo `catalog_pt.json`, que usa o texto original em inglês como chave. APIs novas, ou com a descrição alterada no repositório de origem, aparecem em inglês até serem incluídas nesse arquivo. A busca encontra termos nos dois idiomas. O código gerado pelos kits usa nomes de tabelas e colunas em português nos dois idiomas.
+- **Interface:** todos os textos ficam em `i18n.py`.
+- **Catálogo:** categorias e descrições das APIs são traduzidas pelo `catalog_pt.json`, que usa o texto original como chave. APIs novas, ou com a descrição alterada na origem, aparecem em inglês até entrarem nesse arquivo. O `catalog_en.json` faz o caminho inverso para a fonte que vem em português.
+- **Kits:** o original fica em português (`kits.py` e `kits_ibge.py`) e a versão em inglês em `kits_i18n.py` e `kits_ibge.py`.
 
-## Estrutura
+O código gerado pelos kits usa nomes de tabelas e colunas em português nos dois idiomas.
+
+## Fontes do catálogo
+
+O catálogo é montado ao vivo a partir de sete repositórios do GitHub, com cache de 30 minutos.
+
+| Fonte | Papel |
+|---|---|
+| [public-apis/public-apis](https://github.com/public-apis/public-apis) | Fonte principal |
+| [marcelscruz/public-apis](https://github.com/marcelscruz/public-apis) | APIs que a principal não tem |
+| [public-api-lists/public-api-lists](https://github.com/public-api-lists/public-api-lists) | APIs que as anteriores não têm |
+| [IF-TI/APIs-PublicasBrasil](https://github.com/IF-TI/APIs-PublicasBrasil) | APIs brasileiras |
+| [n0shake/Public-APIs](https://github.com/n0shake/Public-APIs) | APIs de grandes empresas |
+| [APIs-guru/graphql-apis](https://github.com/APIs-guru/graphql-apis) | APIs em GraphQL |
+| [jdorfman/awesome-json-datasets](https://github.com/jdorfman/awesome-json-datasets) | Endereços que devolvem JSON sem autenticação |
+
+Como as fontes são unidas (`catalog.py`):
+
+- A fonte principal entra inteira. As demais só acrescentam o que é novo, na ordem da tabela.
+- É duplicata o item com o mesmo nome, o mesmo endereço ou o mesmo domínio de outro já listado. Domínios que hospedam muitas APIs, como github.com, não contam para a última regra.
+- As categorias de cada fonte são convertidas para as do site.
+- Itens de conteúdo adulto são descartados.
+- Se uma fonte extra ficar fora do ar, o site continua com as demais e mostra um aviso.
+
+Algumas fontes não informam autenticação, HTTPS ou CORS; nesses cartões o campo aparece como "Não informado". Essas informações podem mudar e devem ser confirmadas na documentação de cada API.
+
+## Estrutura do projeto
 
 ```text
-api_atlas_streamlit/
-├── app.py
-├── catalog.py
-├── kits.py
-├── kits_ibge.py
-├── kits_i18n.py
-├── i18n.py
-├── catalog_pt.json
-├── catalog_en.json
-├── style.css
-├── requirements.txt
-├── README.md
-├── .gitignore
+├── app.py              Página: topo, abas, busca, categorias e cartões
+├── catalog.py          Leitura e união das fontes do catálogo
+├── catalog_pt.json     Tradução de categorias e descrições para o português
+├── catalog_en.json     Tradução para o inglês das descrições que vêm em português
+├── kits.py             Kits Power BI, Gerador Python e as telas dessas abas
+├── kits_ibge.py        Kits do IBGE, gerados a partir da descrição de cada tabela do SIDRA
+├── kits_i18n.py        Tradução dos kits para o inglês
+├── i18n.py             Textos da interface, seletor e detecção de idioma
+├── style.css           Visual do site
+├── requirements.txt    Dependências
 └── .streamlit/
-    └── config.toml
+    └── config.toml     Tema do Streamlit
 ```
 
-## Executar no Windows
+## Executar localmente
+
+Requer Python 3.10 ou mais novo.
+
+Windows:
 
 ```bat
 python -m venv .venv
@@ -57,7 +115,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Executar no macOS/Linux
+macOS ou Linux:
 
 ```bash
 python3 -m venv .venv
@@ -66,25 +124,24 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+O app precisa de internet para baixar o catálogo do GitHub e para a prévia dos kits.
+
 ## Publicar no Streamlit Community Cloud
 
-1. Crie um repositório no GitHub e envie todos os arquivos desta pasta.
-2. Acesse https://share.streamlit.io/ e conecte sua conta GitHub.
-3. Escolha o repositório e defina `app.py` como arquivo principal.
-4. Publique o app.
+1. Acesse https://share.streamlit.io/ e conecte sua conta do GitHub.
+2. Escolha este repositório e defina `app.py` como arquivo principal.
+3. Publique. A cada merge na `main`, o site se atualiza sozinho.
 
-## Fonte e observações
+## Como ampliar
 
-Fontes do catálogo:
+**Novo kit do IBGE.** Acrescente uma chamada a `_kit(...)` em `kits_ibge.py` com o caminho da consulta no SIDRA, o nível territorial (`municipio`, `uf` ou `brasil`), o tipo de período (`ano`, `mes` ou `trimestre`) e as medidas. O Power Query e o Python são gerados a partir disso. Inclua a tradução em `KITS_EN`, no mesmo arquivo.
 
-- https://github.com/public-apis/public-apis (principal)
-- https://github.com/marcelscruz/public-apis
-- https://github.com/public-api-lists/public-api-lists
-- https://github.com/IF-TI/APIs-PublicasBrasil (APIs brasileiras; descrições originais em português, traduzidas para o inglês em `catalog_en.json`)
-- https://github.com/n0shake/Public-APIs
-- https://github.com/APIs-guru/graphql-apis (categoria GraphQL)
-- https://github.com/jdorfman/awesome-json-datasets (endereços que devolvem JSON sem autenticação)
+**Novo kit de outra API.** Acrescente um item à lista `KITS` em `kits.py`, com os modelos de código em M e em Python. Os parâmetros entram como marcadores no formato `«NOME»`.
 
-As fontes extras só acrescentam APIs que ainda não estão no catálogo (mesmo nome, mesmo endereço ou mesmo domínio contam como duplicata). Itens de conteúdo adulto são descartados. Se uma delas ficar fora do ar, o site segue funcionando com as demais. A leitura e a união das fontes ficam em `catalog.py`.
+**Nova fonte do catálogo.** Acrescente um item a `EXTRAS` em `catalog.py`. Se o formato for diferente dos existentes, escreva um leitor e registre-o em `PARSERS`.
 
-A aplicação percorre as tabelas de todas as categorias no README upstream e carrega todas as entradas encontradas. A lista de APIs em destaque na página inicial é uma seleção editorial; o catálogo completo, a busca global e os resultados por categoria vêm do repositório upstream. Autenticação, HTTPS e CORS podem mudar e devem ser confirmados na documentação oficial de cada API.
+**Novo idioma.** Inclua o código em `SUPPORTED` e as traduções em `STRINGS`, no `i18n.py`; crie o `catalog_<idioma>.json`; e acrescente os textos dos kits em `kits_i18n.py`.
+
+## Créditos
+
+O catálogo existe graças ao trabalho das comunidades que mantêm os sete repositórios listados em "Fontes do catálogo". Os dados dos kits vêm de IBGE, Banco Central do Brasil, Câmara dos Deputados, BrasilAPI, Open-Meteo, Frankfurter, Banco Mundial e USGS.
