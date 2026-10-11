@@ -373,7 +373,9 @@ CALCULATE ( COUNTROWS ( fClima ), fClima[chuva_mm] > 0 )''',
             end_date = DataFinal,
             daily = "temperature_2m_max,temperature_2m_min,precipitation_sum",
             timezone = "America/Sao_Paulo"
-        ]
+        ],
+        // Sem este cabeçalho o Power BI falha com "Dados inválidos encontrados durante a decodificação"
+        Headers = [#"Accept-Encoding" = "gzip"]
     ])),
     Diario = Fonte[daily],
     Tabela = Table.FromColumns(Record.FieldValues(Diario), Record.FieldNames(Diario)),
