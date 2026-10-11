@@ -64,6 +64,20 @@ def text(value: str) -> str:
     # "$" is escaped so Streamlit does not read it as a math formula.
     return escape(value).replace("$", "&#36;")
 
+def script_html(item) -> str:
+    """Script Python recolhido no cartão, só para endereços que devolvem JSON direto."""
+    if str(item.get("source")) != catalog.JSON_DATASETS:
+        return ""
+    try:
+        codigo = kits.gerar_script_generico(str(item["url"]), "", "none", "", False) + "\n\nprint(df.head())"
+    except ValueError:
+        return ""
+    # Quebras de linha viram entidades: uma linha em branco encerraria o bloco HTML no Markdown.
+    codigo = escape(codigo).replace("\n", "&#10;")
+    return (f'<details class="api-script"><summary>{t("card_script")}</summary>'
+            f'<pre><code>{codigo}</code></pre></details>')
+
+
 def card_html(item) -> str:
     name = text(str(item["name"]))
     url = str(item["url"])
@@ -84,7 +98,9 @@ def card_html(item) -> str:
         + meta_badge("Auth", str(item["auth"]))
         + meta_badge("HTTPS", str(item["https"]))
         + meta_badge("CORS", str(item["cors"]))
-        + "</div></article>"
+        + "</div>"
+        + script_html(item)
+        + "</article>"
     )
 
 def render_grid(items: pd.DataFrame, view: str) -> None:

@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 
 import requests
 
+JSON_DATASETS = "jdorfman/awesome-json-datasets"
 COLUMNS = ["name", "description", "auth", "https", "cors", "url", "category", "source"]
 
 PRIMARY = {
@@ -44,7 +45,7 @@ EXTRAS = (
     {"name": "n0shake/Public-APIs", "format": "n0shake", "urls": _readme("n0shake/Public-APIs")},
     {"name": "APIs-guru/graphql-apis", "format": "graphql", "urls": _readme("APIs-guru/graphql-apis")},
     {
-        "name": "jdorfman/awesome-json-datasets",
+        "name": JSON_DATASETS,
         "format": "json_datasets",
         "urls": _readme("jdorfman/awesome-json-datasets"),
         "dedupe_host": False,

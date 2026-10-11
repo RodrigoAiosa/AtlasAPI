@@ -16,6 +16,7 @@ O site tem quatro abas.
 - Navegação por categoria, com a quantidade de APIs em cada uma.
 - Cartões em grade com descrição, autenticação, HTTPS, CORS e link para a documentação.
 - Resultados paginados de 24 em 24.
+- Script Python pronto, recolhido no próprio cartão, para os endereços que devolvem JSON direto e sem autenticação (fonte awesome-json-datasets).
 
 ### Kits Power BI
 
