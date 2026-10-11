@@ -377,35 +377,136 @@ class _Consulta:
         return consulta
 
 
-def _visual(pagina: str, indice: int, tipo: str, titulo: str, papeis: dict, consulta: dict, caixa: tuple) -> dict:
+# Design por tema: cor de destaque, fundo da página e nome exibido no cabeçalho.
+TEMAS = {
+    "economia": {"cor": "#1D4ED8", "fundo": "#F3F6FD", "pt": "Economia do Brasil", "en": "Brazilian economy"},
+    "trabalho": {"cor": "#7C3AED", "fundo": "#F7F4FE", "pt": "Trabalho e renda", "en": "Labor and income"},
+    "municipios": {"cor": "#0F766E", "fundo": "#F1F8F7", "pt": "Municípios", "en": "Municipalities"},
+    "agro": {"cor": "#4D7C0F", "fundo": "#F5F8EF", "pt": "Agronegócio", "en": "Agribusiness"},
+    "calendario": {"cor": "#C2410C", "fundo": "#FDF5F0", "pt": "Calendário e clima", "en": "Calendar and weather"},
+    "internacional": {"cor": "#BE185D", "fundo": "#FDF3F7", "pt": "Internacional", "en": "International"},
+    "resumo": {"cor": "#111827", "fundo": "#F5F6F8", "pt": "Visão geral", "en": "Overview"},
+}
+TEMA_DO_KIT = {
+    "bcb": "economia", "ipca": "economia", "inpc": "economia", "pib_trimestral": "economia",
+    "comercio": "economia", "industria": "economia",
+    "desemprego": "trabalho", "rendimento": "trabalho",
+    "populacao": "municipios", "censo2022": "municipios", "pib_municipios": "municipios", "alfabetizacao": "municipios",
+    "producao_agricola": "agro", "rebanhos": "agro",
+    "feriados": "calendario", "clima": "calendario",
+    "cambio": "internacional", "indicadores": "internacional", "paises": "internacional", "terremotos": "internacional",
+}
+_TEXTO, _TEXTO_SUAVE, _LINHA, _BRANCO = "#111827", "#6B7280", "#E5E7EB", "#FFFFFF"
+_FONTE = "Segoe UI"
+CABECALHO, ALTURA_CARTAO = 64, 104
+
+
+def _lit(valor) -> dict:
+    """Valor literal no formato do relatório: texto entre aspas simples, número com sufixo D."""
+    if isinstance(valor, bool):
+        bruto = "true" if valor else "false"
+    elif isinstance(valor, (int, float)):
+        bruto = f"{valor}D"
+    else:
+        bruto = "'" + str(valor).replace("'", "''") + "'"
+    return {"expr": {"Literal": {"Value": bruto}}}
+
+
+def _cor(hexa: str) -> dict:
+    return {"solid": {"color": _lit(hexa)}}
+
+
+def _props(**propriedades) -> list[dict]:
+    return [{"properties": propriedades}]
+
+
+def _moldura(titulo: str | None, fundo: str = _BRANCO) -> dict:
+    """Aparência comum: fundo branco, cantos arredondados, sem sombra e título discreto."""
+    objetos = {
+        "background": _props(show=_lit(True), color=_cor(fundo), transparency=_lit(0)),
+        "border": _props(show=_lit(True), color=_cor(_LINHA), radius=_lit(12)),
+        "dropShadow": _props(show=_lit(False)),
+        "title": _props(show=_lit(False)),
+    }
+    if titulo:
+        objetos["title"] = _props(show=_lit(True), text=_lit(titulo), fontColor=_cor(_TEXTO_SUAVE),
+                                  fontSize=_lit(11), fontFamily=_lit(_FONTE))
+    return objetos
+
+
+def _estilo(tipo: str, cor: str, com_serie: bool) -> dict:
+    """Formatação do conteúdo do visual, por tipo."""
+    if tipo == "card":
+        return {"labels": _props(color=_cor(cor), fontSize=_lit(26), fontFamily=_lit(_FONTE)),
+                "categoryLabels": _props(show=_lit(False))}
+    if tipo == "tableEx":
+        return {"stylePreset": _props(name=_lit("Minimal")),
+                "columnHeaders": _props(fontColor=_cor(cor), fontFamily=_lit(_FONTE)),
+                "grid": _props(gridVertical=_lit(False), gridHorizontalColor=_cor(_LINHA))}
+    eixo = dict(showAxisTitle=_lit(False), labelColor=_cor(_TEXTO_SUAVE), fontFamily=_lit(_FONTE))
+    objetos = {
+        "categoryAxis": _props(**eixo),
+        "valueAxis": _props(gridlineColor=_cor(_LINHA), **eixo),
+        "legend": _props(show=_lit(com_serie), position=_lit("Top"), labelColor=_cor(_TEXTO_SUAVE)),
+    }
+    if not com_serie:
+        objetos["dataPoint"] = _props(defaultColor=_cor(cor))
+    if tipo == "lineChart":
+        objetos["lineStyles"] = _props(strokeWidth=_lit(3))
+    return objetos
+
+
+def _container(pagina: str, indice: int, chave: str, miolo: dict, caixa: tuple) -> dict:
     x, y, largura, altura = caixa
     posicao = {"x": x, "y": y, "z": indice * 1000, "width": largura, "height": altura, "tabOrder": indice * 1000}
-    literal = "'" + titulo.replace("'", "''") + "'"
-    config = {
-        "name": _id(pagina, indice, titulo),
-        "layouts": [{"id": 0, "position": posicao}],
-        "singleVisual": {
-            "visualType": tipo,
-            "projections": papeis,
-            "prototypeQuery": consulta,
-            "drillFilterOtherVisuals": True,
-            "vcObjects": {"title": [{"properties": {
-                "show": {"expr": {"Literal": {"Value": "true"}}},
-                "text": {"expr": {"Literal": {"Value": literal}}},
-            }}]},
-        },
-    }
+    config = {"name": _id(pagina, indice, chave), "layouts": [{"id": 0, "position": posicao}], "singleVisual": miolo}
     return {"config": json.dumps(config, ensure_ascii=False), "filters": "[]",
             "x": x, "y": y, "z": posicao["z"], "width": largura, "height": altura, "tabOrder": posicao["tabOrder"]}
 
 
-def _cartao(pagina, indice, medida, tabela, caixa) -> dict:
+def _visual(pagina, indice, tipo, titulo, papeis, consulta, caixa, cor) -> dict:
+    return _container(pagina, indice, titulo, {
+        "visualType": tipo,
+        "projections": papeis,
+        "prototypeQuery": consulta,
+        "drillFilterOtherVisuals": True,
+        "objects": _estilo(tipo, cor, "Series" in papeis),
+        "vcObjects": _moldura(titulo),
+    }, caixa)
+
+
+def _caixa_texto(pagina, indice, chave, paragrafos, caixa, fundo=None) -> dict:
+    moldura = {"background": _props(show=_lit(bool(fundo)), color=_cor(fundo or _BRANCO), transparency=_lit(0)),
+               "border": _props(show=_lit(False)), "dropShadow": _props(show=_lit(False)),
+               "title": _props(show=_lit(False)), "visualHeader": _props(show=_lit(False))}
+    return _container(pagina, indice, chave, {
+        "visualType": "textbox", "drillFilterOtherVisuals": True,
+        "objects": {"general": _props(paragraphs=paragrafos)}, "vcObjects": moldura,
+    }, caixa)
+
+
+def _cabecalho(pagina: str, titulo: str, tema: dict) -> list[dict]:
+    """Barra na cor do tema, nome do tema e título da página."""
+    rotulo = tema.get(lang(), tema["en"]).upper()
+    paragrafos = [
+        {"textRuns": [{"value": rotulo, "textStyle": {"fontFamily": _FONTE, "fontSize": "9pt",
+                                                       "fontWeight": "bold", "color": tema["cor"]}}]},
+        {"textRuns": [{"value": titulo, "textStyle": {"fontFamily": _FONTE, "fontSize": "18pt",
+                                                       "fontWeight": "bold", "color": _TEXTO}}]},
+    ]
+    return [
+        _caixa_texto(pagina, 0, "barra", [{"textRuns": [{"value": ""}]}], (MARGEM, MARGEM, 6, CABECALHO), tema["cor"]),
+        _caixa_texto(pagina, 1, "titulo", paragrafos, (MARGEM + 14, MARGEM - 4, LARGURA - 2 * MARGEM - 14, CABECALHO + 8)),
+    ]
+
+
+def _cartao(pagina, indice, medida, tabela, caixa, cor) -> dict:
     consulta = _Consulta()
     ref = consulta.medida(tabela, medida)
-    return _visual(pagina, indice, "card", medida, {"Values": [{"queryRef": ref}]}, consulta.pronta(), caixa)
+    return _visual(pagina, indice, "card", medida, {"Values": [{"queryRef": ref}]}, consulta.pronta(), caixa, cor)
 
 
-def _principal(pagina, indice, spec, dono, tabelas, caixa) -> dict | None:
+def _principal(pagina, indice, spec, dono, tabelas, caixa, cor) -> dict | None:
     """Gráfico ou tabela. Devolve None se alguma tabela ou medida não estiver no projeto."""
     tipo, titulo = spec[0], spec[1]
     consulta = _Consulta()
@@ -417,7 +518,7 @@ def _principal(pagina, indice, spec, dono, tabelas, caixa) -> dict | None:
         refs_medidas = [consulta.medida(dono[m], m) for m in nomes_medidas]
         ordenar = refs_medidas[0] if refs_medidas else None
         return _visual(pagina, indice, "tableEx", titulo, {"Values": [{"queryRef": r} for r in refs + refs_medidas]},
-                       consulta.pronta(ordenar), caixa)
+                       consulta.pronta(ordenar), caixa, cor)
     categoria, medida = spec[2], spec[3]
     serie = spec[4] if len(spec) > 4 else None
     if categoria[0] not in tabelas or medida not in dono or (serie and serie[0] not in tabelas):
@@ -428,12 +529,14 @@ def _principal(pagina, indice, spec, dono, tabelas, caixa) -> dict | None:
     ref = consulta.medida(dono[medida], medida)
     papeis["Y"] = [{"queryRef": ref}]
     ordenar = ref if tipo == "barras" else None
-    return _visual(pagina, indice, _TIPOS[tipo], titulo, papeis, consulta.pronta(ordenar), caixa)
+    return _visual(pagina, indice, _TIPOS[tipo], titulo, papeis, consulta.pronta(ordenar), caixa, cor)
 
 
-def _pagina(nome: str, titulo: str, ordem: int, visuais: list[dict]) -> dict:
-    return {"config": "{}", "displayName": titulo[:50], "displayOption": 1, "filters": "[]", "ordinal": ordem,
-            "height": float(ALTURA), "name": nome, "visualContainers": visuais, "width": float(LARGURA)}
+def _pagina(nome: str, titulo: str, ordem: int, visuais: list[dict], fundo: str = _BRANCO) -> dict:
+    config = {"objects": {"background": _props(color=_cor(fundo), transparency=_lit(0))}}
+    return {"config": json.dumps(config), "displayName": titulo[:50], "displayOption": 1, "filters": "[]",
+            "ordinal": ordem, "height": float(ALTURA), "name": nome, "visualContainers": visuais,
+            "width": float(LARGURA)}
 
 
 def _grade(quantidade: int, y: int, altura: int, colunas: int | None = None) -> list[tuple]:
@@ -445,35 +548,42 @@ def _grade(quantidade: int, y: int, altura: int, colunas: int | None = None) -> 
 
 
 def paginas(plano: dict) -> list[dict]:
-    """Página de resumo com os principais cartões e uma página por kit."""
+    """Página de resumo com os principais cartões e uma página por kit, cada uma no design do seu tema."""
     dono = {m["name"]: m["tabela"] for m in plano["medidas"]}
     tabelas = {tb["nome"] for tb in plano["tabelas"]}
+    inicio = MARGEM + CABECALHO + MARGEM
     resultado, destaques = [], []
     for item in plano["tabelas"]:
-        spec = VISUAIS.get(item.get("kit", {}).get("id"))
+        kit = item.get("kit", {})
+        spec = VISUAIS.get(kit.get("id"))
         if not spec:
             continue
+        tema = TEMAS[TEMA_DO_KIT.get(kit["id"], "resumo")]
+        cor = tema["cor"]
         pagina = f"ReportSection{_id('pagina', item['nome'])}"
+        titulo = kits.tr(kit, "titulo") if lang() != "pt" else kit["titulo"]
         cartoes = [m for m in spec["cartoes"] if m in dono]
-        destaques += [(m, dono[m]) for m in cartoes[:2]]
-        visuais = [_cartao(pagina, i, m, dono[m], caixa)
-                   for i, (m, caixa) in enumerate(zip(cartoes, _grade(len(cartoes), MARGEM, 120)))]
-        topo = MARGEM + (140 if cartoes else 0)
+        destaques += [(m, dono[m], cor) for m in cartoes[:2]]
+        visuais = [_cartao(pagina, 2 + i, m, dono[m], caixa, cor)
+                   for i, (m, caixa) in enumerate(zip(cartoes, _grade(len(cartoes), inicio, ALTURA_CARTAO)))]
+        topo = inicio + (ALTURA_CARTAO + MARGEM if cartoes else 0)
         possiveis = [s for s in spec["principais"]
-                     if _principal(pagina, 0, s, dono, tabelas, (0, 0, 1, 1)) is not None]
+                     if _principal(pagina, 0, s, dono, tabelas, (0, 0, 1, 1), cor) is not None]
         for i, (s, caixa) in enumerate(zip(possiveis, _grade(len(possiveis), topo, ALTURA - topo - MARGEM))):
-            visuais.append(_principal(pagina, len(cartoes) + i, s, dono, tabelas, caixa))
+            visuais.append(_principal(pagina, 2 + len(cartoes) + i, s, dono, tabelas, caixa, cor))
         if visuais:
-            resultado.append((pagina, kits.tr(item["kit"], "titulo") if lang() != "pt" else item["kit"]["titulo"], visuais))
+            resultado.append((pagina, titulo, _cabecalho(pagina, titulo, tema) + visuais, tema["fundo"]))
     secoes = []
     if len(resultado) > 1 and destaques:
+        tema = TEMAS["resumo"]
         pagina = f"ReportSection{_id('pagina', 'resumo')}"
         destaques = destaques[:12]
-        caixas = _grade(len(destaques), MARGEM, 150, colunas=4)
+        caixas = _grade(len(destaques), inicio, 130, colunas=4)
+        cartoes = [_cartao(pagina, 2 + i, m, tb, caixa, cor) for i, ((m, tb, cor), caixa) in enumerate(zip(destaques, caixas))]
         secoes.append(_pagina(pagina, t("mont_page_summary"), 0,
-                              [_cartao(pagina, i, m, tb, caixa) for i, ((m, tb), caixa) in enumerate(zip(destaques, caixas))]))
-    for nome, titulo, visuais in resultado:
-        secoes.append(_pagina(nome, titulo, len(secoes), visuais))
+                              _cabecalho(pagina, t("mont_page_summary"), tema) + cartoes, tema["fundo"]))
+    for nome, titulo, visuais, fundo in resultado:
+        secoes.append(_pagina(nome, titulo, len(secoes), visuais, fundo))
     if not secoes:
         secoes.append(_pagina("ReportSection", t("mont_page_blank"), 0, []))
     return secoes
@@ -587,7 +697,7 @@ def render() -> None:
     secoes = paginas(plano)
     st.markdown(f"**{t('mont_pages')}**")
     st.markdown("\n".join(
-        f"- {secao['displayName']} ({len(secao['visualContainers'])} {t('mont_visuals')})" for secao in secoes
+        f"- {secao['displayName']} ({sum('prototypeQuery' in v['config'] for v in secao['visualContainers'])} {t('mont_visuals')})" for secao in secoes
     ))
     for aviso in plano["avisos"]:
         st.caption(t(f"mont_{aviso}"))
