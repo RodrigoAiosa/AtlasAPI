@@ -10,6 +10,7 @@ import streamlit as st
 import catalog
 import i18n
 import kits
+import montador
 from i18n import t
 
 ROOT = Path(__file__).parent
@@ -134,7 +135,12 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True,
 )
-tab_catalog, tab_kits, tab_python = st.tabs([t("tab_catalog"), t("tab_kits"), t("tab_python")])
+tab_catalog, tab_kits, tab_montador, tab_python = st.tabs(
+    [t("tab_catalog"), t("tab_kits"), t("tab_montador"), t("tab_python")]
+)
+
+with tab_montador:
+    montador.render()
 
 with tab_kits:
     kits.render_kits()

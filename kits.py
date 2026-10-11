@@ -802,8 +802,9 @@ def gerar_script_generico(url: str, caminho: str, autenticacao: str, nome_chave:
 
 # ---------- Telas ----------
 
-def _campo(kit: dict, parametro: dict):
-    chave = f"kit_{kit['id']}_{parametro['chave']}"
+def _campo(kit: dict, parametro: dict, prefixo: str = "kit"):
+    # O prefixo separa os campos de cada aba, que são desenhados na mesma execução.
+    chave = f"{prefixo}_{kit['id']}_{parametro['chave']}"
     rotulo = tr_parametro(kit, parametro, "rotulo")
     tipo = parametro["tipo"]
     if tipo == "data":

@@ -8,7 +8,7 @@ Em outubro de 2026 o catálogo reúne mais de 3.100 APIs em 56 categorias. Os n�
 
 ## O que o site oferece
 
-O site tem três abas.
+O site tem quatro abas.
 
 ### Catálogo de APIs
 
@@ -39,6 +39,18 @@ O site tem três abas.
 | Internacional | Câmbio diário · Indicadores de países · Países · Terremotos no mundo | Frankfurter · Banco Mundial · USGS |
 
 Os kits por município usam o código IBGE do município (`municipio_id`) e se relacionam entre si por ele.
+
+### Montador de Projeto
+
+Junta vários kits em um projeto do Power BI (`.pbip`) pronto para abrir. A pessoa escolhe os kits e baixa um `.zip` com:
+
+- uma consulta em Power Query por tabela;
+- a tabela calendário (`dCalendario`) e as dimensões compartilhadas de municípios (`dCenso2022`) e de UFs (`dUF`), incluídas quando necessárias;
+- os relacionamentos entre as chaves em comum (`data`, `municipio_id`, `uf_id`, `pais_iso3`);
+- as medidas DAX de cada kit, inclusive as que só fazem sentido quando dois kits estão juntos, como PIB per capita;
+- as consultas em `.pq`, os scripts em Python e as medidas em `.dax`, para reaproveitar em outro arquivo.
+
+Participam 20 dos 22 kits; ficam fora "Municípios do Brasil" e "Deputados federais", cujas colunas vêm direto da API, sem nomes fixos.
 
 ### Gerador Python
 
@@ -95,6 +107,7 @@ Algumas fontes não informam autenticação, HTTPS ou CORS; nesses cartões o ca
 ├── kits.py             Kits Power BI, Gerador Python e as telas dessas abas
 ├── kits_ibge.py        Kits do IBGE, gerados a partir da descrição de cada tabela do SIDRA
 ├── kits_i18n.py        Tradução dos kits para o inglês
+├── montador.py         Montador de Projeto: gera o projeto Power BI (.pbip) a partir dos kits
 ├── i18n.py             Textos da interface, seletor e detecção de idioma
 ├── style.css           Visual do site
 ├── requirements.txt    Dependências
