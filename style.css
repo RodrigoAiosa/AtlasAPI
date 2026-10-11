@@ -120,3 +120,9 @@ div[data-testid="stButton"] button:hover { color: #6258f5; border-color: #c8c4ff
   .featured-card { min-height: auto; }
   .site-footer { flex-direction: column; align-items: flex-start; }
 }
+
+/* Script Python recolhido nos cartões de endereços JSON */
+.api-script { margin-top: .9rem; border-top: 1px solid #eceef4; padding-top: .7rem; }
+.api-script summary { cursor: pointer; color: #6c63ff; font-size: .82rem; font-weight: 700; }
+.api-script pre { margin: .6rem 0 0; padding: .75rem .85rem; background: #171a2e; color: #e8eaf6; border-radius: 9px; font-size: .74rem; line-height: 1.5; overflow-x: auto; white-space: pre; }
+.api-script code { background: none; color: inherit; padding: 0; font-size: inherit; }
