@@ -273,13 +273,215 @@ def modelo(plano: dict) -> dict:
     }
 
 
-def _relatorio() -> dict:
-    pagina = {
-        "config": "{}", "displayName": "Página 1", "displayOption": 1, "filters": "[]",
-        "height": 720.0, "name": "ReportSection", "visualContainers": [], "width": 1280.0,
+# ---------- Relatório: uma página por kit, com visuais iniciais ----------
+
+# Categorias usadas nos gráficos.
+_DATA = ("dCalendario", "Data")
+_UF_MUNICIPIOS = ("dCenso2022", "uf")
+_MUNICIPIO = ("dCenso2022", "municipio")
+_UF = ("dUF", "uf_nome")
+
+# Por kit: medidas que viram cartões e até dois visuais principais.
+# Gráfico: (tipo, título, categoria, medida[, série]). Tabela: ("tabela", título, colunas, medidas).
+VISUAIS = {
+    "ipca": {"cartoes": ["IPCA 12 Meses"],
+             "principais": [("linha", "IPCA acumulado em 12 meses", _DATA, "IPCA 12 Meses")]},
+    "inpc": {"cartoes": ["INPC 12 Meses"],
+             "principais": [("linha", "INPC acumulado em 12 meses", _DATA, "INPC 12 Meses")]},
+    "comercio": {"cartoes": ["Índice de Volume"],
+                 "principais": [("linha", "Volume de vendas do varejo (2022 = 100)", _DATA, "Índice de Volume")]},
+    "industria": {"cartoes": ["Índice de Produção"],
+                  "principais": [("linha", "Produção industrial (2022 = 100)", _DATA, "Índice de Produção")]},
+    "bcb": {"cartoes": ["Valor Mais Recente"],
+            "principais": [("linha", "Indicador ao longo do tempo", _DATA, "Valor Mais Recente")]},
+    "cambio": {"cartoes": ["Taxa no Fim do Período", "Taxa Média"],
+               "principais": [("linha", "Cotação por moeda", _DATA, "Taxa Média", ("fCambio", "moeda"))]},
+    "clima": {"cartoes": ["Chuva Total (mm)", "Dias com Chuva"],
+              "principais": [("colunas", "Chuva por dia (mm)", _DATA, "Chuva Total (mm)")]},
+    "feriados": {"cartoes": ["Dias Úteis"],
+                 "principais": [("tabela", "Feriados nacionais",
+                                 [("dFeriado", "data"), ("dFeriado", "feriado"), ("dFeriado", "tipo")], [])]},
+    "populacao": {"cartoes": ["População"],
+                  "principais": [("barras", "População por UF", _UF_MUNICIPIOS, "População"),
+                                 ("tabela", "Maiores municípios", [_MUNICIPIO, _UF_MUNICIPIOS], ["População"])]},
+    "pib_municipios": {"cartoes": ["PIB (R$)", "PIB per Capita"],
+                       "principais": [("barras", "PIB por UF", _UF_MUNICIPIOS, "PIB (R$)"),
+                                      ("tabela", "Maiores economias municipais", [_MUNICIPIO, _UF_MUNICIPIOS], ["PIB (R$)"])]},
+    "alfabetizacao": {"cartoes": ["Taxa de Alfabetização Média", "Municípios Abaixo de 90%"],
+                      "principais": [("barras", "Taxa de alfabetização média por UF", _UF_MUNICIPIOS, "Taxa de Alfabetização Média"),
+                                     ("tabela", "Taxa por município", [_MUNICIPIO, _UF_MUNICIPIOS], ["Taxa de Alfabetização Média"])]},
+    "censo2022": {"cartoes": ["População 2022", "Densidade Média"],
+                  "principais": [("barras", "População em 2022 por UF", _UF_MUNICIPIOS, "População 2022"),
+                                 ("tabela", "Municípios no Censo 2022", [_MUNICIPIO, _UF_MUNICIPIOS], ["População 2022", "Densidade Média"])]},
+    "desemprego": {"cartoes": ["Taxa no Último Trimestre"],
+                   "principais": [("barras", "Taxa de desemprego no último trimestre por UF", _UF, "Taxa no Último Trimestre"),
+                                  ("linha", "Taxa média de desemprego por ano", ("fDesemprego", "ano"), "Taxa de Desemprego")]},
+    "producao_agricola": {"cartoes": ["Quantidade (t)", "Preço Médio por Tonelada (R$)"],
+                          "principais": [("barras", "Quantidade produzida por UF (t)", _UF, "Quantidade (t)"),
+                                         ("tabela", "Produção por UF", [_UF], ["Quantidade (t)", "Preço Médio por Tonelada (R$)"])]},
+    "rebanhos": {"cartoes": ["Cabeças"],
+                 "principais": [("barras", "Rebanho por UF (cabeças)", _UF, "Cabeças"),
+                                ("tabela", "Participação de cada UF", [_UF], ["Cabeças", "Participação da UF"])]},
+    "rendimento": {"cartoes": ["Rendimento Médio"],
+                   "principais": [("linha", "Rendimento médio real por ano (R$)", ("fRendimento", "ano"), "Rendimento Médio")]},
+    "pib_trimestral": {"cartoes": ["PIB (R$ milhões)"],
+                       "principais": [("colunas", "PIB por ano (R$ milhões)", ("fPIBTrimestral", "ano"), "PIB (R$ milhões)")]},
+    "indicadores": {"cartoes": [],
+                    "principais": [("linha", "Indicador por país", ("fIndicadorPais", "ano"), "Valor", ("fIndicadorPais", "pais"))]},
+    "paises": {"cartoes": ["Países", "Países de Renda Alta"],
+               "principais": [("barras", "Países por região", ("dPais", "regiao"), "Países")]},
+    "terremotos": {"cartoes": ["Terremotos", "Maior Magnitude"],
+                   "principais": [("tabela", "Maiores terremotos", [("fTerremoto", "local"), ("fTerremoto", "data_hora")], ["Maior Magnitude"])]},
+}
+_TIPOS = {"linha": "lineChart", "barras": "clusteredBarChart", "colunas": "clusteredColumnChart"}
+LARGURA, ALTURA, MARGEM = 1280, 720, 20
+
+
+def _id(*partes) -> str:
+    return uuid.uuid5(uuid.NAMESPACE_URL, "/".join(str(p) for p in partes)).hex[:20]
+
+
+class _Consulta:
+    """Monta o prototypeQuery de um visual: tabelas usadas e campos selecionados."""
+
+    def __init__(self) -> None:
+        self.apelidos: dict[str, str] = {}
+        self.campos: list[dict] = []
+
+    def _fonte(self, tabela: str) -> dict:
+        apelido = self.apelidos.setdefault(tabela, f"t{len(self.apelidos)}")
+        return {"SourceRef": {"Source": apelido}}
+
+    def coluna(self, tabela: str, coluna: str) -> str:
+        nome = f"{tabela}.{coluna}"
+        self.campos.append({"Column": {"Expression": self._fonte(tabela), "Property": coluna},
+                            "Name": nome, "NativeReferenceName": coluna})
+        return nome
+
+    def medida(self, tabela: str, medida: str) -> str:
+        nome = f"{tabela}.{medida}"
+        self.campos.append({"Measure": {"Expression": self._fonte(tabela), "Property": medida},
+                            "Name": nome, "NativeReferenceName": medida})
+        return nome
+
+    def pronta(self, ordenar_por: str | None = None) -> dict:
+        consulta = {
+            "Version": 2,
+            "From": [{"Name": apelido, "Entity": tabela, "Type": 0} for tabela, apelido in self.apelidos.items()],
+            "Select": self.campos,
+        }
+        if ordenar_por:
+            campo = next(c for c in self.campos if c["Name"] == ordenar_por)
+            expressao = {k: v for k, v in campo.items() if k in {"Column", "Measure"}}
+            consulta["OrderBy"] = [{"Direction": 2, "Expression": expressao}]  # 2 = decrescente
+        return consulta
+
+
+def _visual(pagina: str, indice: int, tipo: str, titulo: str, papeis: dict, consulta: dict, caixa: tuple) -> dict:
+    x, y, largura, altura = caixa
+    posicao = {"x": x, "y": y, "z": indice * 1000, "width": largura, "height": altura, "tabOrder": indice * 1000}
+    literal = "'" + titulo.replace("'", "''") + "'"
+    config = {
+        "name": _id(pagina, indice, titulo),
+        "layouts": [{"id": 0, "position": posicao}],
+        "singleVisual": {
+            "visualType": tipo,
+            "projections": papeis,
+            "prototypeQuery": consulta,
+            "drillFilterOtherVisuals": True,
+            "vcObjects": {"title": [{"properties": {
+                "show": {"expr": {"Literal": {"Value": "true"}}},
+                "text": {"expr": {"Literal": {"Value": literal}}},
+            }}]},
+        },
     }
-    return {"config": json.dumps({"version": "5.37", "themeCollection": {}}),
-            "layoutOptimization": 0, "sections": [pagina]}
+    return {"config": json.dumps(config, ensure_ascii=False), "filters": "[]",
+            "x": x, "y": y, "z": posicao["z"], "width": largura, "height": altura, "tabOrder": posicao["tabOrder"]}
+
+
+def _cartao(pagina, indice, medida, tabela, caixa) -> dict:
+    consulta = _Consulta()
+    ref = consulta.medida(tabela, medida)
+    return _visual(pagina, indice, "card", medida, {"Values": [{"queryRef": ref}]}, consulta.pronta(), caixa)
+
+
+def _principal(pagina, indice, spec, dono, tabelas, caixa) -> dict | None:
+    """Gráfico ou tabela. Devolve None se alguma tabela ou medida não estiver no projeto."""
+    tipo, titulo = spec[0], spec[1]
+    consulta = _Consulta()
+    if tipo == "tabela":
+        colunas, nomes_medidas = spec[2], spec[3]
+        if any(tb not in tabelas for tb, _ in colunas) or any(m not in dono for m in nomes_medidas):
+            return None
+        refs = [consulta.coluna(tb, col) for tb, col in colunas]
+        refs_medidas = [consulta.medida(dono[m], m) for m in nomes_medidas]
+        ordenar = refs_medidas[0] if refs_medidas else None
+        return _visual(pagina, indice, "tableEx", titulo, {"Values": [{"queryRef": r} for r in refs + refs_medidas]},
+                       consulta.pronta(ordenar), caixa)
+    categoria, medida = spec[2], spec[3]
+    serie = spec[4] if len(spec) > 4 else None
+    if categoria[0] not in tabelas or medida not in dono or (serie and serie[0] not in tabelas):
+        return None
+    papeis = {"Category": [{"queryRef": consulta.coluna(*categoria), "active": True}]}
+    if serie:
+        papeis["Series"] = [{"queryRef": consulta.coluna(*serie)}]
+    ref = consulta.medida(dono[medida], medida)
+    papeis["Y"] = [{"queryRef": ref}]
+    ordenar = ref if tipo == "barras" else None
+    return _visual(pagina, indice, _TIPOS[tipo], titulo, papeis, consulta.pronta(ordenar), caixa)
+
+
+def _pagina(nome: str, titulo: str, ordem: int, visuais: list[dict]) -> dict:
+    return {"config": "{}", "displayName": titulo[:50], "displayOption": 1, "filters": "[]", "ordinal": ordem,
+            "height": float(ALTURA), "name": nome, "visualContainers": visuais, "width": float(LARGURA)}
+
+
+def _grade(quantidade: int, y: int, altura: int, colunas: int | None = None) -> list[tuple]:
+    """Caixas de mesma largura lado a lado (quebra em linhas quando `colunas` é informado)."""
+    por_linha = colunas or max(quantidade, 1)
+    largura = (LARGURA - MARGEM * (por_linha + 1)) // por_linha
+    return [(MARGEM + (i % por_linha) * (largura + MARGEM), y + (i // por_linha) * (altura + MARGEM), largura, altura)
+            for i in range(quantidade)]
+
+
+def paginas(plano: dict) -> list[dict]:
+    """Página de resumo com os principais cartões e uma página por kit."""
+    dono = {m["name"]: m["tabela"] for m in plano["medidas"]}
+    tabelas = {tb["nome"] for tb in plano["tabelas"]}
+    resultado, destaques = [], []
+    for item in plano["tabelas"]:
+        spec = VISUAIS.get(item.get("kit", {}).get("id"))
+        if not spec:
+            continue
+        pagina = f"ReportSection{_id('pagina', item['nome'])}"
+        cartoes = [m for m in spec["cartoes"] if m in dono]
+        destaques += [(m, dono[m]) for m in cartoes[:2]]
+        visuais = [_cartao(pagina, i, m, dono[m], caixa)
+                   for i, (m, caixa) in enumerate(zip(cartoes, _grade(len(cartoes), MARGEM, 120)))]
+        topo = MARGEM + (140 if cartoes else 0)
+        possiveis = [s for s in spec["principais"]
+                     if _principal(pagina, 0, s, dono, tabelas, (0, 0, 1, 1)) is not None]
+        for i, (s, caixa) in enumerate(zip(possiveis, _grade(len(possiveis), topo, ALTURA - topo - MARGEM))):
+            visuais.append(_principal(pagina, len(cartoes) + i, s, dono, tabelas, caixa))
+        if visuais:
+            resultado.append((pagina, kits.tr(item["kit"], "titulo") if lang() != "pt" else item["kit"]["titulo"], visuais))
+    secoes = []
+    if len(resultado) > 1 and destaques:
+        pagina = f"ReportSection{_id('pagina', 'resumo')}"
+        destaques = destaques[:12]
+        caixas = _grade(len(destaques), MARGEM, 150, colunas=4)
+        secoes.append(_pagina(pagina, t("mont_page_summary"), 0,
+                              [_cartao(pagina, i, m, tb, caixa) for i, ((m, tb), caixa) in enumerate(zip(destaques, caixas))]))
+    for nome, titulo, visuais in resultado:
+        secoes.append(_pagina(nome, titulo, len(secoes), visuais))
+    if not secoes:
+        secoes.append(_pagina("ReportSection", t("mont_page_blank"), 0, []))
+    return secoes
+
+
+def _relatorio(plano: dict) -> dict:
+    return {"config": json.dumps({"version": "5.37", "themeCollection": {}, "activeSectionIndex": 0}),
+            "layoutOptimization": 0, "sections": paginas(plano)}
 
 
 def arquivos(plano: dict, leiame: str) -> dict[str, str]:
@@ -292,7 +494,7 @@ def arquivos(plano: dict, leiame: str) -> dict[str, str]:
         f"{PROJETO}.SemanticModel/model.bim": j(modelo(plano)),
         f"{PROJETO}.Report/definition.pbir": j({"version": "1.0", "datasetReference": {
             "byPath": {"path": f"../{PROJETO}.SemanticModel"}}}),
-        f"{PROJETO}.Report/report.json": j(_relatorio()),
+        f"{PROJETO}.Report/report.json": j(_relatorio(plano)),
         "LEIAME.txt": leiame,
     }
     for item in plano["tabelas"]:
@@ -382,6 +584,11 @@ def render() -> None:
             st.markdown("\n".join(f"- {m['name']}" for m in plano["medidas"]))
         else:
             st.caption(t("mont_no_measures"))
+    secoes = paginas(plano)
+    st.markdown(f"**{t('mont_pages')}**")
+    st.markdown("\n".join(
+        f"- {secao['displayName']} ({len(secao['visualContainers'])} {t('mont_visuals')})" for secao in secoes
+    ))
     for aviso in plano["avisos"]:
         st.caption(t(f"mont_{aviso}"))
     if plano["soltas"]:
