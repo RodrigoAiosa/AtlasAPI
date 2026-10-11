@@ -49,6 +49,7 @@ Junta vários kits em um projeto do Power BI (`.pbip`) pronto para abrir. A pess
 - os relacionamentos entre as chaves em comum (`data`, `municipio_id`, `uf_id`, `pais_iso3`);
 - as medidas DAX de cada kit, inclusive as que só fazem sentido quando dois kits estão juntos, como PIB per capita;
 - uma página de relatório por kit, com cartões, gráficos e tabelas iniciais, mais uma página de resumo;
+- uma capa com o título do projeto, os números do modelo, as páginas agrupadas por tema e as fontes dos dados;
 - um design por tema: cada página tem cabeçalho, cor de destaque e fundo próprios do tema do kit (economia, trabalho e renda, municípios, agronegócio, calendário e clima, internacional);
 - as consultas em `.pq`, os scripts em Python e as medidas em `.dax`, para reaproveitar em outro arquivo.
 

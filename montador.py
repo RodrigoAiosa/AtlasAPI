@@ -8,6 +8,7 @@ Power BI Desktop abre a partir do arquivo .pbip.
 from __future__ import annotations
 
 import io
+import datetime
 import json
 import re
 import uuid
@@ -379,13 +380,13 @@ class _Consulta:
 
 # Design por tema: cor de destaque, fundo da página e nome exibido no cabeçalho.
 TEMAS = {
-    "economia": {"cor": "#1D4ED8", "fundo": "#F3F6FD", "pt": "Economia do Brasil", "en": "Brazilian economy"},
-    "trabalho": {"cor": "#7C3AED", "fundo": "#F7F4FE", "pt": "Trabalho e renda", "en": "Labor and income"},
-    "municipios": {"cor": "#0F766E", "fundo": "#F1F8F7", "pt": "Municípios", "en": "Municipalities"},
-    "agro": {"cor": "#4D7C0F", "fundo": "#F5F8EF", "pt": "Agronegócio", "en": "Agribusiness"},
-    "calendario": {"cor": "#C2410C", "fundo": "#FDF5F0", "pt": "Calendário e clima", "en": "Calendar and weather"},
-    "internacional": {"cor": "#BE185D", "fundo": "#FDF3F7", "pt": "Internacional", "en": "International"},
-    "resumo": {"cor": "#111827", "fundo": "#F5F6F8", "pt": "Visão geral", "en": "Overview"},
+    "economia": {"cor_clara": "#60A5FA", "cor": "#1D4ED8", "fundo": "#F3F6FD", "pt": "Economia do Brasil", "en": "Brazilian economy"},
+    "trabalho": {"cor_clara": "#A78BFA", "cor": "#7C3AED", "fundo": "#F7F4FE", "pt": "Trabalho e renda", "en": "Labor and income"},
+    "municipios": {"cor_clara": "#2DD4BF", "cor": "#0F766E", "fundo": "#F1F8F7", "pt": "Municípios", "en": "Municipalities"},
+    "agro": {"cor_clara": "#A3E635", "cor": "#4D7C0F", "fundo": "#F5F8EF", "pt": "Agronegócio", "en": "Agribusiness"},
+    "calendario": {"cor_clara": "#FB923C", "cor": "#C2410C", "fundo": "#FDF5F0", "pt": "Calendário e clima", "en": "Calendar and weather"},
+    "internacional": {"cor_clara": "#F472B6", "cor": "#BE185D", "fundo": "#FDF3F7", "pt": "Internacional", "en": "International"},
+    "resumo": {"cor_clara": "#D1D5DB", "cor": "#111827", "fundo": "#F5F6F8", "pt": "Visão geral", "en": "Overview"},
 }
 TEMA_DO_KIT = {
     "bcb": "economia", "ipca": "economia", "inpc": "economia", "pib_trimestral": "economia",
@@ -475,9 +476,10 @@ def _visual(pagina, indice, tipo, titulo, papeis, consulta, caixa, cor) -> dict:
     }, caixa)
 
 
-def _caixa_texto(pagina, indice, chave, paragrafos, caixa, fundo=None) -> dict:
+def _caixa_texto(pagina, indice, chave, paragrafos, caixa, fundo=None, raio=0) -> dict:
+    borda = _props(show=_lit(True), color=_cor(fundo), radius=_lit(raio)) if fundo and raio else _props(show=_lit(False))
     moldura = {"background": _props(show=_lit(bool(fundo)), color=_cor(fundo or _BRANCO), transparency=_lit(0)),
-               "border": _props(show=_lit(False)), "dropShadow": _props(show=_lit(False)),
+               "border": borda, "dropShadow": _props(show=_lit(False)),
                "title": _props(show=_lit(False)), "visualHeader": _props(show=_lit(False))}
     return _container(pagina, indice, chave, {
         "visualType": "textbox", "drillFilterOtherVisuals": True,
@@ -547,8 +549,59 @@ def _grade(quantidade: int, y: int, altura: int, colunas: int | None = None) -> 
             for i in range(quantidade)]
 
 
+def _texto(valor: str, tamanho: int, cor: str, negrito: bool = False) -> dict:
+    estilo = {"fontFamily": _FONTE, "fontSize": f"{tamanho}pt", "color": cor}
+    if negrito:
+        estilo["fontWeight"] = "bold"
+    return {"textRuns": [{"value": valor, "textStyle": estilo}]}
+
+
+def _capa(plano: dict, resultado: list[tuple], total_paginas: int) -> dict:
+    """Capa escura com título, números do projeto, páginas agrupadas por tema e fontes."""
+    pagina = f"ReportSection{_id('pagina', 'capa')}"
+    fundo, painel, claro, suave = "#111827", "#1F2937", "#F9FAFB", "#9CA3AF"
+    largura = LARGURA - 2 * 60
+    titulo = (plano.get("titulo") or "").strip() or t("mont_cover_default")
+    numeros = t("mont_cover_stats", tables=len(plano["tabelas"]), measures=len(plano["medidas"]), pages=total_paginas)
+    hoje = datetime.date.today()
+    data = hoje.strftime("%d/%m/%Y") if lang() == "pt" else hoje.isoformat()
+    visuais = [
+        _caixa_texto(pagina, 0, "barra", [_texto("", 9, claro)], (60, 78, 6, 150), claro),
+        _caixa_texto(pagina, 1, "titulo", [
+            _texto("API ATLAS  ·  POWER BI", 10, suave, True),
+            _texto(titulo, 40, claro, True),
+            _texto(numeros, 14, "#D1D5DB"),
+        ], (82, 66, largura - 22, 176)),
+        _caixa_texto(pagina, 2, "conteudo", [_texto(t("mont_cover_contents").upper(), 9, suave, True)],
+                     (60, 270, largura, 34)),
+    ]
+    grupos: dict[str, list[str]] = {}
+    for _, titulo_pagina, _, _, chave in resultado:
+        grupos.setdefault(chave, []).append(titulo_pagina)
+    por_linha = min(len(grupos), 3) or 1
+    linhas = -(-len(grupos) // por_linha)
+    altura = 158 if linhas > 1 else 220
+    vao = 20
+    largura_cartao = (largura - vao * (por_linha - 1)) // por_linha
+    for i, (chave, titulos) in enumerate(grupos.items()):
+        tema = TEMAS[chave]
+        x = 60 + (i % por_linha) * (largura_cartao + vao)
+        y = 310 + (i // por_linha) * (altura + vao)
+        paragrafos = [_texto(tema.get(lang(), tema["en"]), 13, claro, True)]
+        paragrafos += [_texto(nome[:44], 10, "#D1D5DB") for nome in titulos]
+        visuais.append(_caixa_texto(pagina, 10 + 2 * i, f"tema-{chave}", paragrafos,
+                                    (x, y, largura_cartao, altura), painel, 12))
+        visuais.append(_caixa_texto(pagina, 11 + 2 * i, f"cor-{chave}", [_texto("", 9, claro)],
+                                    (x + 16, y + altura - 14, 48, 5), tema["cor_clara"]))
+    fontes = list(dict.fromkeys(re.sub(r", (tabela|table) \d+", "", kits.tr(tb["kit"], "fonte")) for tb in plano["tabelas"] if tb.get("kit", {}).get("fonte")))
+    rodape = [_texto(t("mont_cover_sources", sources=", ".join(fontes))[:230], 9, suave),
+              _texto(t("mont_cover_made", date=data), 9, suave)]
+    visuais.append(_caixa_texto(pagina, 40, "rodape", rodape, (60, 660, largura, 52)))
+    return _pagina(pagina, t("mont_page_cover"), 0, visuais, fundo)
+
+
 def paginas(plano: dict) -> list[dict]:
-    """Página de resumo com os principais cartões e uma página por kit, cada uma no design do seu tema."""
+    """Capa, página de resumo com os principais cartões e uma página por kit, no design do seu tema."""
     dono = {m["name"]: m["tabela"] for m in plano["medidas"]}
     tabelas = {tb["nome"] for tb in plano["tabelas"]}
     inicio = MARGEM + CABECALHO + MARGEM
@@ -558,7 +611,8 @@ def paginas(plano: dict) -> list[dict]:
         spec = VISUAIS.get(kit.get("id"))
         if not spec:
             continue
-        tema = TEMAS[TEMA_DO_KIT.get(kit["id"], "resumo")]
+        chave = TEMA_DO_KIT.get(kit["id"], "resumo")
+        tema = TEMAS[chave]
         cor = tema["cor"]
         pagina = f"ReportSection{_id('pagina', item['nome'])}"
         titulo = kits.tr(kit, "titulo") if lang() != "pt" else kit["titulo"]
@@ -572,7 +626,7 @@ def paginas(plano: dict) -> list[dict]:
         for i, (s, caixa) in enumerate(zip(possiveis, _grade(len(possiveis), topo, ALTURA - topo - MARGEM))):
             visuais.append(_principal(pagina, 2 + len(cartoes) + i, s, dono, tabelas, caixa, cor))
         if visuais:
-            resultado.append((pagina, titulo, _cabecalho(pagina, titulo, tema) + visuais, tema["fundo"]))
+            resultado.append((pagina, titulo, _cabecalho(pagina, titulo, tema) + visuais, tema["fundo"], chave))
     secoes = []
     if len(resultado) > 1 and destaques:
         tema = TEMAS["resumo"]
@@ -580,10 +634,12 @@ def paginas(plano: dict) -> list[dict]:
         destaques = destaques[:12]
         caixas = _grade(len(destaques), inicio, 130, colunas=4)
         cartoes = [_cartao(pagina, 2 + i, m, tb, caixa, cor) for i, ((m, tb, cor), caixa) in enumerate(zip(destaques, caixas))]
-        secoes.append(_pagina(pagina, t("mont_page_summary"), 0,
+        secoes.append(_pagina(pagina, t("mont_page_summary"), 1,
                               _cabecalho(pagina, t("mont_page_summary"), tema) + cartoes, tema["fundo"]))
-    for nome, titulo, visuais, fundo in resultado:
-        secoes.append(_pagina(nome, titulo, len(secoes), visuais, fundo))
+    for nome, titulo, visuais, fundo, _ in resultado:
+        secoes.append(_pagina(nome, titulo, len(secoes) + 1, visuais, fundo))
+    if secoes:
+        secoes.insert(0, _capa(plano, resultado, len(secoes) + 1))
     if not secoes:
         secoes.append(_pagina("ReportSection", t("mont_page_blank"), 0, []))
     return secoes
@@ -675,6 +731,8 @@ def render() -> None:
         selecao.append((kit, valores))
 
     plano = planejar(selecao)
+    plano["titulo"] = st.text_input(t("mont_cover_title"), value=t("mont_cover_default"), max_chars=60,
+                                    key=f"mont_titulo__{lang()}")
     esquerda, direita = st.columns(2)
     with esquerda:
         st.markdown(f"**{t('mont_tables')}**")
@@ -697,7 +755,8 @@ def render() -> None:
     secoes = paginas(plano)
     st.markdown(f"**{t('mont_pages')}**")
     st.markdown("\n".join(
-        f"- {secao['displayName']} ({sum('prototypeQuery' in v['config'] for v in secao['visualContainers'])} {t('mont_visuals')})" for secao in secoes
+        f"- {secao['displayName']}" + (f" ({n} {t('mont_visuals')})" if n else "")
+        for secao in secoes for n in [sum("prototypeQuery" in v["config"] for v in secao["visualContainers"])]
     ))
     for aviso in plano["avisos"]:
         st.caption(t(f"mont_{aviso}"))
