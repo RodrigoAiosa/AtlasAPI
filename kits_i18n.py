@@ -84,6 +84,26 @@ CALCULATE ( COUNTROWS ( dCalendario ), dCalendario[É Dia Útil] = TRUE () )''',
 Faturamento por Município =
 DIVIDE ( [Faturamento], [Municípios] )''',
         },
+        "populacao": {
+            "titulo": "Population by municipality (Brazil)",
+            "fonte": "IBGE (SIDRA, table 6579)",
+            "resumo": "Estimated resident population of every Brazilian municipality in a given year.",
+            "observacao": "About 5,570 rows per year. IBGE did not publish estimates for 2022 and 2023; "
+                          "for 2022 use the Census. The query may take a few seconds.",
+            "ponte": "Relate it to the Municipalities of Brazil kit by the municipality code (municipio_id) and use "
+                     "the population to compute per-inhabitant indicators over a dataset generated in "
+                     "BI Data Generator, such as revenue per capita by city or state.",
+            "visuais": ["Municipality map with bubbles sized by population", "Ranking of the 20 largest cities",
+                        "Revenue per inhabitant by state"],
+            "dax": '''População = SUM ( fPopulacao[populacao] )
+
+-- Assuming a [Faturamento] measure in your model
+Faturamento per Capita =
+DIVIDE ( [Faturamento], [População] )''',
+            "parametros": {
+                "PERIODO": {"rotulo": "Year", "opcoes": ["Latest", "2025", "2024", "2021", "2020", "2019", "2018"]},
+            },
+        },
         "clima": {
             "titulo": "Historical weather",
             "resumo": "Daily maximum and minimum temperature and rainfall for a Brazilian state capital.",

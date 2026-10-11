@@ -11,7 +11,7 @@ Diretório de APIs públicas construído com Python e Streamlit, inspirado no la
 - Cards com nome, descrição, autenticação, HTTPS e CORS.
 - Links para documentação quando disponíveis.
 - Cache por 30 minutos para reduzir chamadas ao GitHub.
-- **Kits Power BI:** 9 APIs sem autenticação com consulta pronta em Power Query (M) e em Python, parâmetros ajustáveis, prévia dos dados, ideias de visuais, medidas DAX e a ponte com o [BI Data Generator](https://ai-bidatagenerator.streamlit.app/).
+- **Kits Power BI:** 10 APIs sem autenticação com consulta pronta em Power Query (M) e em Python, parâmetros ajustáveis, prévia dos dados, ideias de visuais, medidas DAX e a ponte com o [BI Data Generator](https://ai-bidatagenerator.streamlit.app/).
 - **Gerador Python:** cole a URL de qualquer endpoint JSON e receba o script em `requests` + `pandas`, com opção de chave de API.
 - CSS separado, configuração do tema Streamlit e estrutura pronta para GitHub/Streamlit Community Cloud.
 
