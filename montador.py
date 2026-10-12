@@ -172,6 +172,18 @@ def _tabela(nome: str, colunas: list[tuple[str, str]], codigo_m: str) -> dict:
     }
 
 
+TABELA_MEDIDAS = "Medidas"
+_CODIGO_MEDIDAS = "let\n    Fonte = #table(type table [Coluna = text], {})\nin\n    Fonte"
+
+
+def _pasta(kit: dict) -> str:
+    """Pasta da medida na tabela Medidas: tema e, dentro dele, o kit (ex.: Municípios\\PIB dos municípios)."""
+    tema = TEMAS[TEMA_DO_KIT.get(kit["id"], "resumo")]
+    titulo = kits.tr(kit, "titulo") if lang() != "pt" else kit["titulo"]
+    # A barra invertida separa pastas e subpastas no Power BI.
+    return f"{tema.get(lang(), tema['en'])}\\{titulo.replace(chr(92), '/')}"
+
+
 def planejar(selecao: list[tuple[dict, dict]]) -> dict:
     """Decide tabelas, relacionamentos e medidas do projeto.
 
@@ -229,7 +241,8 @@ def planejar(selecao: list[tuple[dict, dict]]) -> dict:
         for nome, expressao in medidas(item["dax"]):
             if nome not in vistos:
                 vistos.add(nome)
-                candidatas.append({"name": nome, "expression": expressao, "tabela": item["nome"]})
+                candidatas.append({"name": nome, "expression": expressao, "tabela": item["nome"],
+                                   "pasta": _pasta(item["kit"])})
     if "feriados" not in ids:
         candidatas = [m for m in candidatas if "É Dia Útil" not in "\n".join(m["expression"])]
     return {
@@ -249,11 +262,15 @@ def modelo(plano: dict) -> dict:
             tabela["columns"][0]["isKey"] = True
             if plano["feriados"]:
                 tabela["columns"].append(COLUNA_DIA_UTIL)
-        proprias = [{"name": m["name"], "expression": m["expression"]}
-                    for m in plano["medidas"] if m["tabela"] == item["nome"]]
-        if proprias:
-            tabela["measures"] = proprias
         tabelas.append(tabela)
+    if plano["medidas"]:
+        # Todas as medidas ficam numa tabela só, organizadas em pastas por tema e kit.
+        # Com a única coluna oculta, o Power BI mostra a tabela com o ícone de calculadora, no topo da lista.
+        tabela = _tabela(TABELA_MEDIDAS, [("Coluna", "string")], _CODIGO_MEDIDAS)
+        tabela["columns"][0]["isHidden"] = True
+        tabela["measures"] = [{"name": m["name"], "expression": m["expression"], "displayFolder": m["pasta"]}
+                              for m in plano["medidas"]]
+        tabelas.insert(0, tabela)
     relacionamentos = [
         {"name": str(uuid.uuid5(uuid.NAMESPACE_URL, f"{de}.{coluna_de}>{para}.{coluna_para}")),
          "fromTable": de, "fromColumn": coluna_de, "toTable": para, "toColumn": coluna_para}
@@ -602,7 +619,7 @@ def _capa(plano: dict, resultado: list[tuple], total_paginas: int) -> dict:
 
 def paginas(plano: dict) -> list[dict]:
     """Capa, página de resumo com os principais cartões e uma página por kit, no design do seu tema."""
-    dono = {m["name"]: m["tabela"] for m in plano["medidas"]}
+    dono = {m["name"]: TABELA_MEDIDAS for m in plano["medidas"]}
     tabelas = {tb["nome"] for tb in plano["tabelas"]}
     inicio = MARGEM + CABECALHO + MARGEM
     resultado, destaques = [], []
