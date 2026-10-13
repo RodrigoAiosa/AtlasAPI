@@ -11,6 +11,7 @@ import catalog
 import i18n
 import kits
 import montador
+from esconder_selo import esconder_selo_streamlit
 from i18n import t
 
 ROOT = Path(__file__).parent
@@ -244,3 +245,5 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+esconder_selo_streamlit()
