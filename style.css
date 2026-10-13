@@ -158,3 +158,6 @@ div:has(> a[href*="streamlit.io/cloud"]) {
   margin: 0 !important; padding: 0 !important; overflow: hidden !important;
   opacity: 0 !important; pointer-events: none !important;
 }
+
+/* Espaço para o cabeçalho fixo quando a página rola até a seção. */
+#categorias, #lista-categoria { scroll-margin-top: 4.5rem; }
