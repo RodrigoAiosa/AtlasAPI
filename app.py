@@ -11,6 +11,7 @@ import catalog
 import i18n
 import kits
 import montador
+import rolagem
 from esconder_selo import esconder_selo_streamlit
 from i18n import t
 
@@ -214,7 +215,8 @@ with tab_catalog:
                     unsafe_allow_html=True,
                 )
 
-        st.markdown(f'<div class="section-heading categories-heading"><h2>{t("browse_title")}</h2><span>{t("browse_sub")}</span></div>', unsafe_allow_html=True)
+        st.markdown(f'<div id="categorias" class="section-heading categories-heading"><h2>{t("browse_title")}</h2><span>{t("browse_sub")}</span></div>', unsafe_allow_html=True)
+        rolagem.executar("categorias")
         if not apis.empty:
             category_counts = apis.groupby("category").size().sort_index(
                 key=lambda idx: idx.map(lambda name: i18n.sort_key(i18n.category(name)))
@@ -224,15 +226,18 @@ with tab_catalog:
                 with cols[idx % 4]:
                     if st.button(f"{i18n.category(str(category))}  ·  {count}", key=f"category_{slug(str(category))}", use_container_width=True):
                         st.session_state["selected_category"] = str(category)
+                        rolagem.pedir("lista-categoria")
                         st.rerun()
 
             selected = st.session_state.get("selected_category")
             if selected:
-                st.markdown(f'<div class="section-heading category-results"><h2>{text(i18n.category(selected))}</h2><span>{t("n_apis", n=i18n.number(int(category_counts.get(selected, 0))))}</span></div>', unsafe_allow_html=True)
+                st.markdown(f'<div id="lista-categoria" class="section-heading category-results"><h2>{text(i18n.category(selected))}</h2><span>{t("n_apis", n=i18n.number(int(category_counts.get(selected, 0))))}</span></div>', unsafe_allow_html=True)
+                rolagem.executar("lista-categoria")
                 subset = apis[apis["category"] == selected]
                 render_grid(subset, f"category:{selected}")
                 if st.button(t("back"), key="back_categories"):
                     st.session_state.pop("selected_category", None)
+                    rolagem.pedir("categorias")
                     st.rerun()
         else:
             st.caption(t("categories_unavailable"))
