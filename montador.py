@@ -504,13 +504,14 @@ def _caixa_texto(pagina, indice, chave, paragrafos, caixa, fundo=None, raio=0) -
     }, caixa)
 
 
-def _cabecalho(pagina: str, titulo: str, tema: dict) -> list[dict]:
+def _cabecalho(pagina: str, titulo: str, tema: dict, rotulo: str | None = None) -> list[dict]:
     """Barra na cor do tema, nome do tema e título da página."""
-    rotulo = tema.get(lang(), tema["en"]).upper()
+    rotulo = (rotulo or tema.get(lang(), tema["en"])).upper()
+    tamanho = "18pt" if len(titulo) <= 80 else "13pt"  # perguntas longas cabem em duas linhas
     paragrafos = [
         {"textRuns": [{"value": rotulo, "textStyle": {"fontFamily": _FONTE, "fontSize": "9pt",
                                                        "fontWeight": "bold", "color": tema["cor"]}}]},
-        {"textRuns": [{"value": titulo, "textStyle": {"fontFamily": _FONTE, "fontSize": "18pt",
+        {"textRuns": [{"value": titulo, "textStyle": {"fontFamily": _FONTE, "fontSize": tamanho,
                                                        "fontWeight": "bold", "color": _TEXTO}}]},
     ]
     return [
@@ -586,7 +587,7 @@ def _capa(plano: dict, resultado: list[tuple], total_paginas: int) -> dict:
         _caixa_texto(pagina, 0, "barra", [_texto("", 9, claro)], (60, 78, 6, 150), claro),
         _caixa_texto(pagina, 1, "titulo", [
             _texto("API ATLAS  ·  POWER BI", 10, suave, True),
-            _texto(titulo, 40, claro, True),
+            _texto(titulo, 40 if len(titulo) <= 30 else 26, claro, True),
             _texto(numeros, 14, "#D1D5DB"),
         ], (82, 66, largura - 22, 176)),
         _caixa_texto(pagina, 2, "conteudo", [_texto(t("mont_cover_contents").upper(), 9, suave, True)],
@@ -617,12 +618,32 @@ def _capa(plano: dict, resultado: list[tuple], total_paginas: int) -> dict:
     return _pagina(pagina, t("mont_page_cover"), 0, visuais, fundo)
 
 
+def _pagina_pergunta(pergunta: str, por_kit: list[tuple], dono: dict, tabelas: set) -> dict:
+    """Página com a pergunta no título, o principal cartão de cada kit e até dois gráficos."""
+    tema = TEMAS["resumo"]
+    pagina = f"ReportSection{_id('pagina', 'pergunta')}"
+    inicio = MARGEM + CABECALHO + MARGEM
+    cartoes = [(c[0], cor) for c, _, cor in por_kit if c][:4]
+    graficos = [(s[0], cor) for _, s, cor in por_kit if s][:2]
+    if len(graficos) == 1:  # um kit só: usa os dois visuais dele
+        _, s, cor = next(k for k in por_kit if k[1])
+        graficos = [(x, cor) for x in s[:2]]
+    visuais = [_cartao(pagina, 2 + i, m, dono[m], caixa, cor)
+               for i, ((m, cor), caixa) in enumerate(zip(cartoes, _grade(len(cartoes), inicio, ALTURA_CARTAO)))]
+    topo = inicio + (ALTURA_CARTAO + MARGEM if cartoes else 0)
+    for i, ((spec, cor), caixa) in enumerate(zip(graficos, _grade(len(graficos), topo, ALTURA - topo - MARGEM))):
+        visuais.append(_principal(pagina, 10 + i, spec, dono, tabelas, caixa, cor))
+    titulo = pergunta if len(pergunta) <= 160 else pergunta[:157] + "..."
+    return _pagina(pagina, t("mont_page_question"), 1,
+                   _cabecalho(pagina, titulo, tema, t("mont_page_question")) + visuais, tema["fundo"])
+
+
 def paginas(plano: dict) -> list[dict]:
     """Capa, página de resumo com os principais cartões e uma página por kit, no design do seu tema."""
     dono = {m["name"]: TABELA_MEDIDAS for m in plano["medidas"]}
     tabelas = {tb["nome"] for tb in plano["tabelas"]}
     inicio = MARGEM + CABECALHO + MARGEM
-    resultado, destaques = [], []
+    resultado, destaques, por_kit = [], [], []
     for item in plano["tabelas"]:
         kit = item.get("kit", {})
         spec = VISUAIS.get(kit.get("id"))
@@ -642,10 +663,15 @@ def paginas(plano: dict) -> list[dict]:
                      if _principal(pagina, 0, s, dono, tabelas, (0, 0, 1, 1), cor) is not None]
         for i, (s, caixa) in enumerate(zip(possiveis, _grade(len(possiveis), topo, ALTURA - topo - MARGEM))):
             visuais.append(_principal(pagina, 2 + len(cartoes) + i, s, dono, tabelas, caixa, cor))
+        if cartoes or possiveis:
+            por_kit.append((cartoes, possiveis, cor))
         if visuais:
             resultado.append((pagina, titulo, _cabecalho(pagina, titulo, tema) + visuais, tema["fundo"], chave))
     secoes = []
-    if len(resultado) > 1 and destaques:
+    if plano.get("pergunta") and por_kit:
+        # A pergunta substitui o resumo: cartões e gráficos dos kits que respondem a ela.
+        secoes.append(_pagina_pergunta(plano["pergunta"], por_kit, dono, tabelas))
+    elif len(resultado) > 1 and destaques:
         tema = TEMAS["resumo"]
         pagina = f"ReportSection{_id('pagina', 'resumo')}"
         destaques = destaques[:12]
