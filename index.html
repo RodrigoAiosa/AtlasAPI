@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Atlas — APIs públicas e gratuitas</title>
+<meta name="description" content="Diretório de mais de 3.000 APIs públicas e gratuitas, com kits e projetos prontos para Power BI e gerador de scripts Python.">
+<meta property="og:title" content="API Atlas">
+<meta property="og:description" content="Diretório de APIs públicas e gratuitas, com consultas prontas para Power BI.">
+<meta name="theme-color" content="#f8f9fc">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #171a2e;
+  --ink-2: #35394b;
+  --body: #555b6c;
+  --muted: #777d8e;
+  --faint: #8b90a0;
+  --line: #e8eaf0;
+  --line-2: #eceef4;
+  --bg: #f8f9fc;
+  --card: #ffffff;
+  --purple: #6c63ff;
+  --purple-2: #4a41d6;
+  --purple-soft: #f0efff;
+  --purple-line: #dcd9ff;
+  --code-bg: #171a2e;
+  --code-ink: #e8eaf6;
+  --good-bg: #effaf3; --good-line: #d3f0dd; --good-ink: #18794e;
+  --warn-bg: #fff7ed; --warn-line: #ffead0; --warn-ink: #9a5800;
+  --err-bg: #fef2f2; --err-line: #fecaca; --err-ink: #b42318;
+  --shadow: 0 8px 24px rgba(35,44,85,.035);
+  --radius: 13px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--purple); }
+button, input, select, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Topo */
+.top { display: flex; justify-content: flex-end; padding-top: 18px; }
+.lang { position: relative; }
+.lang select {
+  appearance: none; border: 1px solid #e1e4ec; background: #fff; border-radius: 999px;
+  padding: 8px 34px 8px 14px; font-size: .85rem; cursor: pointer; color: var(--ink-2);
+}
+.lang::after { content: "▾"; position: absolute; right: 13px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--faint); font-size: .75rem; }
+
+/* Hero */
+.hero { text-align: center; padding: 26px 0 22px; }
+.eyebrow { display: inline-flex; align-items: center; gap: .5rem; color: var(--purple); letter-spacing: .16em; font-size: .7rem; font-weight: 800; margin-bottom: 1.2rem; }
+.eyebrow i { width: 7px; height: 7px; background: var(--purple); border-radius: 50%; display: inline-block; }
+.hero h1 { font-size: clamp(2.35rem, 5vw, 3.55rem); line-height: 1.04; letter-spacing: -.055em; font-weight: 800; margin: 0 0 1rem; }
+.hero h1 span { color: var(--muted); }
+.hero p { color: var(--muted); font-size: 1.05rem; margin: 0 auto; max-width: 520px; }
+.stats { display: flex; justify-content: center; align-items: center; gap: 2.2rem; margin-top: 1.9rem; min-height: 3.6rem; }
+.stat { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
+.stat strong { font-size: clamp(2rem, 4.5vw, 2.75rem); line-height: 1; letter-spacing: -.04em; font-weight: 800; color: var(--purple); font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: .74rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.stat-div { width: 1px; height: 2.6rem; background: #e1e4ec; }
+.skeleton { display: inline-block; width: 90px; height: 2.4rem; border-radius: 8px; background: linear-gradient(90deg, #eef0f5, #f6f7fa, #eef0f5); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* Abas */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 10px 0 26px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { border: 0; background: none; padding: 12px 16px; font-size: .92rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--purple); border-bottom-color: var(--purple); }
+.panel[hidden] { display: none; }
+
+/* Títulos de seção */
+.heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin: .5rem 0 1.15rem; }
+.heading h2 { font-size: 1.15rem; letter-spacing: -.025em; font-weight: 800; margin: 0; }
+.heading > span { color: var(--faint); font-size: .82rem; }
+.intro { color: var(--body); font-size: .95rem; line-height: 1.55; max-width: 720px; margin: 0 0 1.2rem; }
+
+/* Busca */
+.search { position: relative; max-width: 640px; margin: 0 auto 3rem; }
+.search svg { position: absolute; left: 1.4rem; top: 50%; transform: translateY(-50%); color: var(--faint); }
+.search input {
+  width: 100%; height: 3.6rem; padding: 0 1.45rem 0 3.6rem; font-size: 1rem; border-radius: 999px;
+  border: 1px solid #e1e4ec; background: #fff; box-shadow: 0 6px 22px rgba(27,36,78,.035); outline: none;
+}
+.search input:focus { border-color: #a9a4ff; box-shadow: 0 0 0 3px rgba(108,99,255,.1); }
+.search input::placeholder { color: var(--faint); }
+
+/* Cartões */
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .95rem; margin-bottom: 1.2rem; }
+.featured { display: flex; gap: 1rem; align-items: flex-start; padding: 1.35rem; background: #fff; border: 1px solid #f0f1f5; border-radius: var(--radius); box-shadow: 0 10px 24px rgba(40,48,90,.035); color: inherit; text-decoration: none; transition: transform .18s, box-shadow .18s, border-color .18s; }
+.featured:hover { transform: translateY(-3px); box-shadow: 0 16px 32px rgba(40,48,90,.09); border-color: var(--purple-line); }
+.ficon, .kicon { width: 46px; height: 46px; flex: 0 0 46px; display: grid; place-items: center; border-radius: 14px; background: var(--purple-soft); font-size: 1.45rem; }
+.fname { font-size: 1rem; font-weight: 800; line-height: 1.3; margin: .1rem 0 .3rem; color: #191c2c; }
+.fcat { color: #858a99; font-size: .76rem; margin-bottom: .65rem; }
+.featured p { color: var(--body); font-size: .85rem; line-height: 1.5; margin: 0 0 .9rem; }
+.flink { color: var(--purple); font-size: .76rem; font-weight: 700; }
+
+.cats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; }
+.btn-soft { border: 1px solid #e7e9f0; background: #fff; color: var(--ink-2); border-radius: 10px; min-height: 2.65rem; padding: .45rem .8rem; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .15s; text-align: center; }
+.btn-soft:hover { color: #6258f5; border-color: #c8c4ff; background: #f8f7ff; }
+.btn-soft.on { color: #6258f5; border-color: var(--purple); background: #f4f3ff; }
+.more { display: flex; justify-content: center; margin: .4rem 0 1.4rem; }
+.more .btn-soft { min-width: 240px; }
+
+.api { display: flex; flex-direction: column; min-width: 0; background: #fff; border: 1px solid var(--line-2); border-radius: var(--radius); padding: 1.2rem 1.3rem; box-shadow: var(--shadow); }
+.api-top { display: flex; gap: .85rem; align-items: center; }
+.aicon { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg, #6c63ff, #9a92ff); color: #fff; font-weight: 800; font-size: 1.1rem; }
+.aname { font-size: 1rem; font-weight: 800; overflow-wrap: anywhere; }
+.aname a { color: inherit; text-decoration: none; }
+.aname a:hover { color: var(--purple); }
+.acat { color: #858a99; font-size: .76rem; margin-top: .15rem; }
+.adesc { flex: 1; color: var(--body); font-size: .9rem; line-height: 1.55; margin: .9rem 0 1rem; overflow-wrap: anywhere; }
+.pills { display: flex; flex-wrap: wrap; gap: .4rem; }
+.pill { display: inline-flex; gap: .35rem; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: .28rem .65rem; color: var(--body); font-size: .73rem; background: #f7f8fb; }
+.pill b { color: #8a8fa0; font-weight: 400; }
+.good { background: var(--good-bg); border-color: var(--good-line); color: var(--good-ink); }
+.warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+.ascript { margin-top: .9rem; border-top: 1px solid var(--line-2); padding-top: .7rem; }
+.ascript summary { cursor: pointer; color: var(--purple); font-size: .82rem; font-weight: 700; }
+
+.empty { text-align: center; background: #fff; border: 1px solid var(--line-2); border-radius: 15px; padding: 3rem 1rem; }
+.empty .big { font-size: 2rem; color: #8d86ff; }
+.empty h3 { margin: .5rem 0; }
+.empty p { color: var(--muted); margin: 0; }
+.back { margin-top: .2rem; }
+
+/* Avisos */
+.note { color: var(--faint); font-size: .82rem; margin: .4rem 0 1rem; }
+.alert { border-radius: 10px; padding: .8rem 1rem; font-size: .9rem; margin: .4rem 0 1rem; border: 1px solid; }
+.alert.warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+.alert.err { background: var(--err-bg); border-color: var(--err-line); color: var(--err-ink); }
+.alert.info { background: #f4f3ff; border-color: var(--purple-line); color: var(--purple-2); }
+
+/* Formulários */
+.fields { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin: 0 0 .6rem; }
+.field label { display: block; font-size: .82rem; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+.field input[type=text], .field input[type=url], .field input[type=number], .field input[type=date], .field select {
+  width: 100%; height: 2.6rem; padding: 0 .8rem; border: 1px solid #e1e4ec; border-radius: 10px; background: #fff; outline: none;
+}
+.field input:focus, .field select:focus { border-color: #a9a4ff; box-shadow: 0 0 0 3px rgba(108,99,255,.1); }
+.field small { display: block; color: var(--faint); font-size: .75rem; margin-top: 4px; }
+.check { display: flex; align-items: center; gap: 8px; font-size: .88rem; color: var(--ink-2); margin-top: 6px; cursor: pointer; }
+.check input { width: 16px; height: 16px; accent-color: var(--purple); }
+
+/* Kits */
+.kit { display: flex; gap: 1rem; align-items: flex-start; padding: 1.35rem; margin: .4rem 0 1.2rem; background: #fff; border: 1px solid var(--line-2); border-radius: var(--radius); box-shadow: var(--shadow); }
+.kit-body { min-width: 0; }
+.ktitle { font-size: 1.05rem; font-weight: 800; }
+.ksrc { color: #858a99; font-size: .78rem; margin: .15rem 0 .6rem; }
+.kit-body p { color: var(--body); font-size: .9rem; line-height: 1.5; margin: 0 0 .8rem; }
+.kcols { margin-top: .7rem; color: var(--body); font-size: .8rem; overflow-wrap: anywhere; }
+.kcols b { color: #8a8fa0; font-weight: 400; }
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 1rem 0 .9rem; }
+.subtab { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: .42rem .95rem; font-size: .83rem; font-weight: 600; color: var(--body); cursor: pointer; }
+.subtab[aria-selected="true"] { background: var(--purple); border-color: var(--purple); color: #fff; }
+.bridge { background: #f4f3ff; border: 1px solid var(--purple-line); border-radius: var(--radius); padding: 1rem 1.2rem; margin: .3rem 0 1.1rem; }
+.bridge strong { color: var(--purple-2); font-size: .85rem; }
+.bridge p { color: var(--ink-2); font-size: .9rem; line-height: 1.55; margin: .3rem 0 0; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+.two h4 { margin: 0 0 .5rem; font-size: .92rem; }
+.two ul { margin: 0; padding-left: 1.2rem; color: var(--body); font-size: .9rem; }
+.two li { margin-bottom: .3rem; }
+
+/* Código */
+.code { position: relative; margin: .2rem 0 .6rem; }
+.code pre { margin: 0; padding: 1rem 1.1rem; background: var(--code-bg); color: var(--code-ink); border-radius: 10px; font: .8rem/1.6 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-x: auto; white-space: pre; tab-size: 4; }
+.code .copy { position: absolute; top: 8px; right: 8px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: #e8eaf6; border-radius: 7px; padding: 4px 10px; font-size: .74rem; cursor: pointer; }
+.code .copy:hover { background: rgba(255,255,255,.16); }
+
+/* Botões */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; padding: .62rem 1.1rem; font-size: .88rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; text-decoration: none; transition: background .15s, border-color .15s; }
+.btn-primary { background: var(--purple); color: #fff; }
+.btn-primary:hover { background: #5b52f0; }
+.btn-primary:disabled { opacity: .55; cursor: progress; }
+.btn-line { background: #fff; color: var(--ink-2); border-color: #e1e4ec; }
+.btn-line:hover { border-color: #c8c4ff; color: #6258f5; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* Tabela da prévia */
+.table-wrap { overflow: auto; max-height: 460px; border: 1px solid var(--line-2); border-radius: 10px; background: #fff; margin: .6rem 0 .8rem; }
+table { border-collapse: collapse; width: 100%; font-size: .8rem; }
+th, td { padding: .45rem .7rem; border-bottom: 1px solid #f1f2f6; text-align: left; white-space: nowrap; }
+th { position: sticky; top: 0; background: #f7f8fb; color: var(--ink-2); font-weight: 700; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.null { color: #c0c4d0; }
+
+/* Montador */
+.picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .5rem; margin-bottom: 1rem; }
+.pick { display: flex; align-items: center; gap: .6rem; border: 1px solid #e7e9f0; background: #fff; border-radius: 10px; padding: .55rem .75rem; cursor: pointer; font-size: .85rem; font-weight: 500; color: var(--ink-2); transition: all .15s; }
+.pick:hover { border-color: #c8c4ff; }
+.pick input { accent-color: var(--purple); width: 16px; height: 16px; flex: 0 0 16px; }
+.pick:has(input:checked) { border-color: var(--purple); background: #f6f5ff; color: var(--ink); }
+.params { border: 1px solid var(--line-2); background: #fff; border-radius: 10px; margin-bottom: .55rem; }
+.params summary { cursor: pointer; padding: .7rem 1rem; font-weight: 600; font-size: .9rem; }
+.params .fields { padding: 0 1rem 1rem; margin: 0; }
+.summary { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; background: #fff; border: 1px solid var(--line-2); border-radius: var(--radius); padding: 1.2rem 1.3rem; margin: 1rem 0; box-shadow: var(--shadow); }
+.summary h4 { margin: 0 0 .5rem; font-size: .9rem; }
+.summary h4:not(:first-child) { margin-top: 1rem; }
+.summary ul { margin: 0; padding-left: 1.1rem; font-size: .86rem; color: var(--body); }
+.summary li { margin-bottom: .25rem; }
+.summary code { font: .8rem "JetBrains Mono", ui-monospace, monospace; background: #f4f5f9; padding: 1px 6px; border-radius: 5px; color: var(--ink-2); }
+.summary .auto { color: var(--faint); font-size: .78rem; }
+
+/* Rodapé */
+footer { border-top: 1px solid var(--line); margin-top: 3rem; padding: 1.4rem 0 2rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; color: #858a99; font-size: .78rem; flex-wrap: wrap; }
+footer strong { color: #25293b; font-size: .9rem; display: block; }
+
+.spinner { width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; vertical-align: -3px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading { color: var(--muted); font-size: .9rem; display: flex; gap: 10px; align-items: center; justify-content: center; padding: 2rem 0; }
+
+@media (max-width: 1000px) { .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 700px) {
+  .grid3 { grid-template-columns: 1fr; }
+  .cats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .two, .summary { grid-template-columns: 1fr; }
+  .heading { flex-direction: column; gap: .25rem; }
+  .hero { padding-top: 12px; }
+  .hero p { font-size: .92rem; }
+  .stats { gap: 1.4rem; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .featured { transition: none; } .skeleton, .spinner { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <label class="lang"><span class="sr" data-t="lang_label">Idioma</span>
+      <select id="lang"><option value="pt">🌐  Português</option><option value="en">🌐  English</option></select>
+    </label>
+  </div>
+
+  <header class="hero">
+    <div class="eyebrow"><i></i> <span data-t="eyebrow"></span></div>
+    <h1><span data-t="hero_l1" style="color:inherit"></span><br><span data-t="hero_l2"></span></h1>
+    <p data-t="hero_sub"></p>
+    <div class="stats" id="stats"><span class="skeleton"></span><div class="stat-div"></div><span class="skeleton" style="width:60px"></span></div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="t-catalogo" aria-controls="p-catalogo" data-tab="catalogo" data-t="tab_catalog"></button>
+    <button class="tab" role="tab" id="t-kits" aria-controls="p-kits" data-tab="kits" data-t="tab_kits"></button>
+    <button class="tab" role="tab" id="t-montador" aria-controls="p-montador" data-tab="montador" data-t="tab_montador"></button>
+    <button class="tab" role="tab" id="t-python" aria-controls="p-python" data-tab="python" data-t="tab_python"></button>
+  </nav>
+
+  <!-- ═══ CATÁLOGO ═══ -->
+  <section class="panel" id="p-catalogo" role="tabpanel" aria-labelledby="t-catalogo">
+    <div class="search">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="9.5" cy="9.5" r="6.5"/><path d="m14.5 14.5 5 5"/></svg>
+      <input id="busca" type="search" autocomplete="off" data-t-ph="search_placeholder" data-t-label="search_label">
+    </div>
+    <div id="catAviso"></div>
+    <div id="catConteudo"><div class="loading"><span class="spinner"></span><span data-t="loading"></span></div></div>
+  </section>
+
+  <!-- ═══ KITS ═══ -->
+  <section class="panel" id="p-kits" role="tabpanel" aria-labelledby="t-kits" hidden>
+    <div class="heading"><h2 data-t="kits_title"></h2><span data-t="kits_sub"></span></div>
+    <p class="intro" id="kitsIntro"></p>
+    <div class="fields" style="grid-template-columns:minmax(0,420px)"><div class="field"><label for="kitSel" data-t="kit_select"></label><select id="kitSel"></select></div></div>
+    <div id="kitCard"></div>
+    <div class="fields" id="kitParams"></div>
+    <div id="kitErro"></div>
+    <p class="note" id="kitObs"></p>
+    <div id="kitAbas">
+      <div class="subtabs" role="tablist">
+        <button class="subtab" role="tab" data-sub="m" data-t="tab_m"></button>
+        <button class="subtab" role="tab" data-sub="py" data-t="tab_py"></button>
+        <button class="subtab" role="tab" data-sub="modelo" data-t="tab_model"></button>
+        <button class="subtab" role="tab" data-sub="previa" data-t="tab_preview"></button>
+      </div>
+      <div data-subpanel="m"><p class="note" id="mHow"></p><div class="code"><button class="copy" data-copy="kitM"></button><pre id="kitM"></pre></div><p class="note" id="mNote"></p></div>
+      <div data-subpanel="py" hidden><p class="note" id="pyHow"></p><div class="code"><button class="copy" data-copy="kitPy"></button><pre id="kitPy"></pre></div></div>
+      <div data-subpanel="modelo" hidden>
+        <div class="bridge"><strong data-t="bridge_title"></strong><p id="kitPonte"></p></div>
+        <div class="two">
+          <div><h4 data-t="visuals_title"></h4><ul id="kitVisuais"></ul></div>
+          <div><h4 data-t="dax_title"></h4><div class="code"><button class="copy" data-copy="kitDax"></button><pre id="kitDax"></pre></div></div>
+        </div>
+        <p><a class="btn btn-line bdg" target="_blank" rel="noopener" data-t="open_bdg"></a></p>
+      </div>
+      <div data-subpanel="previa" hidden>
+        <p class="note" data-t="preview_caption"></p>
+        <button class="btn btn-primary" id="previaBtn" data-t="preview_button"></button>
+        <div id="previaOut"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ MONTADOR ═══ -->
+  <section class="panel" id="p-montador" role="tabpanel" aria-labelledby="t-montador" hidden>
+    <div class="heading"><h2 data-t="mont_title"></h2><span data-t="mont_sub"></span></div>
+    <p class="intro" data-t="mont_intro"></p>
+    <h4 style="margin:.2rem 0 .6rem;font-size:.9rem" data-t="mont_select"></h4>
+    <div class="picks" id="montPicks"></div>
+    <div id="montParams"></div>
+    <div id="montCorpo">
+      <div class="fields" style="grid-template-columns:minmax(0,420px);margin-top:1rem"><div class="field"><label for="montTitulo" data-t="mont_cover_title"></label><input type="text" id="montTitulo" maxlength="60"></div></div>
+      <div id="montErro"></div>
+      <div id="montResumo"></div>
+      <div class="row" style="margin:.4rem 0 .4rem"><button class="btn btn-primary" id="montBaixar" data-t="mont_download"></button></div>
+      <p class="note" data-t="mont_how"></p>
+      <div class="bridge"><strong data-t="bridge_title"></strong><p data-t="mont_bridge"></p></div>
+      <p><a class="btn btn-line bdg" target="_blank" rel="noopener" data-t="open_bdg"></a></p>
+    </div>
+    <div id="montVazio"></div>
+  </section>
+
+  <!-- ═══ GERADOR PYTHON ═══ -->
+  <section class="panel" id="p-python" role="tabpanel" aria-labelledby="t-python" hidden>
+    <div class="heading"><h2 data-t="gen_title"></h2><span data-t="gen_sub"></span></div>
+    <p class="intro" data-t="gen_intro"></p>
+    <div class="field" style="margin-bottom:14px"><label for="genUrl" data-t="gen_url"></label><input type="url" id="genUrl" data-t-ph="gen_url_ph" autocomplete="off"></div>
+    <div class="fields">
+      <div class="field">
+        <label for="genCaminho" data-t="gen_path"></label><input type="text" id="genCaminho" placeholder="data.items" autocomplete="off">
+        <small data-t="gen_path_help"></small>
+        <label class="check"><input type="checkbox" id="genCsv"> <span data-t="gen_csv"></span></label>
+      </div>
+      <div class="field">
+        <label for="genAuth" data-t="gen_auth"></label>
+        <select id="genAuth"><option value="none" data-t="auth_none"></option><option value="header" data-t="auth_header"></option><option value="query" data-t="auth_query"></option></select>
+        <div id="genChaveBox" hidden style="margin-top:12px"><label for="genChave" data-t="gen_key_name"></label><input type="text" id="genChave" autocomplete="off"></div>
+      </div>
+    </div>
+    <div id="genOut"></div>
+  </section>
+
+  <footer>
+    <div><strong>API Atlas</strong><span data-t="footer_tag"></span></div>
+    <span id="fontes"></span>
+  </footer>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   API Atlas na Vercel. A lógica fica nas funções Python (pasta api/),
+   que reaproveitam o código do app Streamlit; esta página só desenha a tela.
+   ============================================================ */
+const POR_PAGINA = 24;
+const S = {
+  lang: "pt", cfg: null, textos: {}, apis: null, catErro: null,
+  busca: "", categoria: null, limite: POR_PAGINA,
+  kit: null, valores: {}, sub: "m", previaKey: null,
+  mont: { ids: [], valores: {}, titulo: null },
+};
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const linkSeguro = u => /^https?:\/\//i.test(String(u || "")) ? String(u) : "";
+const fold = s => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+function t(chave, valores) {
+  let texto = S.textos[chave] ?? chave;
+  if (valores) texto = texto.replace(/\{(\w+)\}/g, (m, k) => (k in valores ? valores[k] : m));
+  return texto;
+}
+const num = n => new Intl.NumberFormat(S.lang === "pt" ? "pt-BR" : "en-US").format(n);
+
+async function api(caminho, corpo) {
+  const opcoes = corpo ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...corpo, lang: S.lang }) } : {};
+  const r = await fetch(caminho, opcoes);
+  const tipo = r.headers.get("Content-Type") || "";
+  if (tipo.includes("application/json")) return { status: r.status, dados: await r.json() };
+  return { status: r.status, blob: await r.blob() };
+}
+function debounce(fn, ms) { let id; return (...a) => { clearTimeout(id); id = setTimeout(() => fn(...a), ms); }; }
+function blocoCodigo(id, codigo) {
+  return `<div class="code"><button class="copy" data-copy="${id}">${esc(t("copy"))}</button><pre id="${id}">${esc(codigo)}</pre></div>`;
+}
+
+/* ── Idioma ── */
+function idiomaInicial() {
+  const q = new URLSearchParams(location.search).get("lang");
+  if (q && ["pt", "en"].includes(q.slice(0, 2).toLowerCase())) return q.slice(0, 2).toLowerCase();
+  for (const l of navigator.languages || [navigator.language]) {
+    const p = String(l || "").split("-")[0].toLowerCase();
+    if (p === "pt" || p === "en") return p;
+  }
+  return "auto"; // o servidor decide pelo país de acesso, como o app
+}
+
+async function carregarConfig(pedido) {
+  const { dados } = await api(`/api/config?lang=${encodeURIComponent(pedido)}`);
+  S.cfg = dados; S.lang = dados.lang;
+  S.textos = { ...dados.textos, copy: S.lang === "pt" ? "Copiar" : "Copy", copied: S.lang === "pt" ? "Copiado!" : "Copied!" };
+  document.documentElement.lang = S.lang === "pt" ? "pt-BR" : "en";
+  document.title = t("page_title");
+  $("#lang").value = S.lang;
+  const url = new URL(location.href); url.searchParams.set("lang", S.lang); history.replaceState(null, "", url);
+  traduzirFixos();
+}
+
+function traduzirFixos() {
+  $$("[data-t]").forEach(el => { el.textContent = t(el.dataset.t); });
+  $$("[data-t-ph]").forEach(el => { el.placeholder = t(el.dataset.tPh); });
+  $$("[data-t-label]").forEach(el => { el.setAttribute("aria-label", t(el.dataset.tLabel)); });
+  $$(".copy").forEach(b => { b.textContent = t("copy"); });
+  $$(".bdg").forEach(a => { a.href = S.cfg.bdg; });
+  const link = `<a href="${esc(S.cfg.bdg)}" target="_blank" rel="noopener">BI Data Generator</a>`;
+  $("#kitsIntro").innerHTML = esc(t("kits_intro", { link: "\u0000" })).replace("\u0000", link);
+}
+
+$("#lang").addEventListener("change", async e => {
+  await carregarConfig(e.target.value);
+  S.apis = null; S.previaKey = null; $("#previaOut").innerHTML = "";
+  carregarCatalogo();
+  montarKits(); montarMontador(); gerarScript();
+});
+
+/* ── Abas ── */
+function abrirAba(nome, focar) {
+  $$(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === nome)));
+  $$(".panel").forEach(p => { p.hidden = p.id !== "p-" + nome; });
+  if (location.hash.slice(1) !== nome) history.replaceState(null, "", location.pathname + location.search + "#" + nome);
+  if (focar) $("#t-" + nome).focus();
+}
+$$(".tab").forEach(b => b.addEventListener("click", () => abrirAba(b.dataset.tab)));
+document.querySelector(".tabs").addEventListener("keydown", e => {
+  if (!["ArrowLeft", "ArrowRight"].includes(e.key)) return;
+  const abas = $$(".tab"), i = abas.findIndex(b => b.getAttribute("aria-selected") === "true");
+  abrirAba(abas[(i + (e.key === "ArrowRight" ? 1 : abas.length - 1)) % abas.length].dataset.tab, true);
+});
+
+/* ── Copiar ── */
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-copy]"); if (!b) return;
+  const texto = document.getElementById(b.dataset.copy)?.textContent || "";
+  try { await navigator.clipboard.writeText(texto); } catch { const r = document.createRange(); r.selectNodeContents(document.getElementById(b.dataset.copy)); getSelection().removeAllRanges(); getSelection().addRange(r); document.execCommand("copy"); }
+  b.textContent = t("copied"); setTimeout(() => { b.textContent = t("copy"); }, 1400);
+});
+
+/* ============================================================
+   CATÁLOGO
+   ============================================================ */
+async function carregarCatalogo() {
+  const pedidoLang = S.lang;
+  $("#catConteudo").innerHTML = `<div class="loading"><span class="spinner"></span>${esc(t("loading"))}</div>`;
+  $("#stats").innerHTML = `<span class="skeleton"></span><div class="stat-div"></div><span class="skeleton" style="width:60px"></span>`;
+  try {
+    const { dados } = await api(`/api/catalogo?lang=${pedidoLang}`);
+    if (pedidoLang !== S.lang) return;
+    S.apis = dados.apis || []; S.catErro = dados.erro ? dados : null;
+    S.indice = S.apis.map(a => fold([a.n, a.d, a.d0, a.c, a.c0, a.a, a.h, a.o].join(" ")));
+    $("#catAviso").innerHTML = dados.aviso ? `<p class="note">${esc(dados.aviso)}</p>` : "";
+  } catch (erro) {
+    S.apis = []; S.catErro = { erro: t("err_load"), dica: t("err_hint") };
+  }
+  desenharStats();
+  desenharCatalogo();
+}
+
+function desenharStats() {
+  if (!S.apis || !S.apis.length) { $("#stats").innerHTML = ""; return; }
+  const cats = new Set(S.apis.map(a => a.c)).size;
+  $("#stats").innerHTML = `<div class="stat"><strong>${num(S.apis.length)}</strong><span>${esc(t("stat_apis"))}</span></div>
+    <div class="stat-div"></div><div class="stat"><strong>${num(cats)}</strong><span>${esc(t("stat_categories"))}</span></div>`;
+}
+
+function badge(rotulo, valor) {
+  valor = valor || "Unknown";
+  const n = valor.toLowerCase();
+  const mostrado = ["yes", "no", "unknown"].includes(n) ? t(n) : valor;
+  const classe = ["yes", "true"].includes(n) ? "good" : ["no", "false"].includes(n) ? "warn" : "";
+  return `<span class="pill ${classe}"><b>${rotulo}</b>${esc(mostrado)}</span>`;
+}
+
+function cartaoApi(a) {
+  const url = linkSeguro(a.u);
+  const titulo = url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(a.n)} ↗</a>` : esc(a.n);
+  const script = a.s ? `<details class="ascript"><summary>${esc(t("card_script"))}</summary><div class="code" style="margin-top:.6rem"><pre>${esc(a.s)}</pre></div></details>` : "";
+  return `<article class="api"><div class="api-top"><div class="aicon">${esc((a.n || "?").slice(0, 1).toUpperCase())}</div>
+    <div style="min-width:0"><div class="aname">${titulo}</div><div class="acat">${esc(a.c)}</div></div></div>
+    <p class="adesc">${esc(a.d) || esc(t("no_description"))}</p>
+    <div class="pills">${badge("Auth", a.a)}${badge("HTTPS", a.h)}${badge("CORS", a.o)}</div>${script}</article>`;
+}
+
+function grade(lista) {
+  const ordenada = [...lista].sort((x, y) => x.n.localeCompare(y.n, undefined, { sensitivity: "base" }));
+  let html = `<div class="grid3">${ordenada.slice(0, S.limite).map(cartaoApi).join("")}</div>`;
+  if (S.limite < ordenada.length) html += `<div class="more"><button class="btn-soft" id="maisApis">${esc(t("load_more", { n: num(ordenada.length - S.limite) }))}</button></div>`;
+  return html;
+}
+
+function desenharCatalogo() {
+  const alvo = $("#catConteudo");
+  if (!S.apis) return;
+  let html = "";
+  if (S.catErro) html += `<div class="alert err">${esc(S.catErro.erro)}</div><div class="alert info">${esc(S.catErro.dica || t("err_hint"))}</div>`;
+  const q = fold(S.busca.trim());
+  if (q) {
+    const achadas = S.apis.filter((_, i) => S.indice[i].includes(q));
+    html += `<div class="heading"><h2>${esc(t("results_title"))}</h2><span>${esc(achadas.length === 1 ? t("results_count_one") : t("results_count", { n: num(achadas.length) }))}</span></div>`;
+    html += achadas.length ? grade(achadas)
+      : `<div class="empty"><div class="big">⌕</div><h3>${esc(t("empty_title"))}</h3><p>${esc(t("empty_text"))}</p></div>`;
+    alvo.innerHTML = html; return;
+  }
+  html += `<div class="heading"><h2>${esc(t("featured_title"))}</h2><span>${esc(t("featured_sub"))}</span></div><div class="grid3">`;
+  html += S.cfg.destaques.map(d => `<a class="featured" href="${esc(linkSeguro(d.url))}" target="_blank" rel="noopener noreferrer">
+      <div class="ficon">${d.icone}</div><div><div class="fname">${esc(d.nome)}</div><div class="fcat">${esc(d.categoria)}</div>
+      <p>${esc(d.descricao)}</p><span class="flink">${esc(t("featured_link"))}</span></div></a>`).join("");
+  html += `</div><div class="heading" id="categorias" style="margin-top:2.15rem"><h2>${esc(t("browse_title"))}</h2><span>${esc(t("browse_sub"))}</span></div>`;
+  if (!S.apis.length) { alvo.innerHTML = html + `<p class="note">${esc(t("categories_unavailable"))}</p>`; return; }
+  const contagem = new Map();
+  S.apis.forEach(a => contagem.set(a.c, (contagem.get(a.c) || 0) + 1));
+  const cats = [...contagem.keys()].sort((x, y) => fold(x).localeCompare(fold(y)));
+  html += `<div class="cats">${cats.map(c => `<button class="btn-soft${c === S.categoria ? " on" : ""}" data-cat="${esc(c)}">${esc(c)}  ·  ${num(contagem.get(c))}</button>`).join("")}</div>`;
+  if (S.categoria && contagem.has(S.categoria)) {
+    html += `<div class="heading" id="listaCategoria" style="margin-top:2rem"><h2>${esc(S.categoria)}</h2><span>${esc(t("n_apis", { n: num(contagem.get(S.categoria)) }))}</span></div>`;
+    html += grade(S.apis.filter(a => a.c === S.categoria));
+    html += `<button class="btn-soft back" id="voltarCats">${esc(t("back"))}</button>`;
+  }
+  alvo.innerHTML = html;
+}
+
+$("#busca").addEventListener("input", debounce(e => { S.busca = e.target.value; S.limite = POR_PAGINA; desenharCatalogo(); }, 160));
+$("#catConteudo").addEventListener("click", e => {
+  const cat = e.target.closest("[data-cat]");
+  if (cat) {
+    S.categoria = cat.dataset.cat; S.limite = POR_PAGINA; desenharCatalogo();
+    $("#listaCategoria")?.scrollIntoView({ block: "start" }); return;
+  }
+  if (e.target.closest("#maisApis")) { S.limite += POR_PAGINA; desenharCatalogo(); return; }
+  if (e.target.closest("#voltarCats")) { S.categoria = null; S.limite = POR_PAGINA; desenharCatalogo(); $("#categorias")?.scrollIntoView({ block: "start" }); }
+});
+
+/* ============================================================
+   CAMPOS DOS KITS (usados nos Kits e no Montador)
+   ============================================================ */
+const hoje = () => new Date().toISOString().slice(0, 10);
+function campoHtml(kit, p, prefixo, valor) {
+  const id = `${prefixo}_${kit.id}_${p.chave}`;
+  const nome = `data-kit="${kit.id}" data-chave="${p.chave}"`;
+  let entrada;
+  if (p.tipo === "data") entrada = `<input type="date" id="${id}" ${nome} min="1950-01-01" max="${hoje()}" value="${esc(valor ?? p.padrao)}">`;
+  else if (p.tipo === "inteiro") entrada = `<input type="number" id="${id}" ${nome} min="${p.min}" max="${p.max}" step="1" value="${esc(valor ?? p.padrao)}">`;
+  else if (p.tipo === "opcoes") entrada = `<select id="${id}" ${nome}>${p.opcoes.map((o, i) => `<option value="${i}"${String(valor ?? 0) === String(i) ? " selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+  else entrada = `<input type="text" id="${id}" ${nome} value="${esc(valor ?? p.padrao)}" autocomplete="off">`;
+  return `<div class="field"><label for="${id}">${esc(p.rotulo)}</label>${entrada}${p.ajuda && p.tipo === "texto" ? `<small>${esc(p.ajuda)}</small>` : ""}</div>`;
+}
+function lerCampo(el) { return el.type === "number" ? (el.value === "" ? null : Number(el.value)) : el.value; }
+
+/* ============================================================
+   KITS POWER BI
+   ============================================================ */
+function montarKits() {
+  const kits = S.cfg.kits;
+  const atual = S.kit && kits.find(k => k.id === S.kit.id) ? S.kit.id : kits[0].id;
+  $("#kitSel").innerHTML = kits.map(k => `<option value="${k.id}">${k.icone}  ${esc(k.titulo)}</option>`).join("");
+  $("#kitSel").value = atual;
+  escolherKit(atual, true);
+}
+
+function escolherKit(id, manterValores) {
+  const kit = S.cfg.kits.find(k => k.id === id);
+  S.kit = kit;
+  if (!manterValores) S.valores = {};
+  const papel = kit.papel === "Fato" ? t("role_fact") : t("role_dimension");
+  $("#kitCard").innerHTML = `<div class="kit"><div class="kicon">${kit.icone}</div><div class="kit-body">
+    <div class="ktitle">${esc(kit.titulo)}</div>
+    <div class="ksrc">${esc(kit.fonte)} · <a href="${esc(linkSeguro(kit.docs))}" target="_blank" rel="noopener noreferrer">${esc(t("docs"))}</a></div>
+    <p>${esc(kit.resumo)}</p>
+    <div class="pills"><span class="pill"><b>${esc(t("role"))}</b>${esc(papel)}</span><span class="pill"><b>${esc(t("table"))}</b>${esc(kit.tabela)}</span><span class="pill good">${esc(t("no_auth"))}</span></div>
+    <div class="kcols"><b>${esc(t("columns"))}</b> ${esc(kit.colunas)}</div></div></div>`;
+  $("#kitParams").innerHTML = kit.parametros.map(p => campoHtml(kit, p, "kit", S.valores[p.chave])).join("");
+  $("#kitParams").hidden = !kit.parametros.length;
+  $("#kitObs").textContent = kit.observacao || "";
+  $("#mHow").textContent = t("m_how", { table: kit.tabela });
+  $("#mNote").textContent = `${t("m_note")} ${t("code_names_note")}`.trim();
+  $("#pyHow").textContent = `${t("py_how")} ${t("code_names_note")}`.trim();
+  $("#kitPonte").textContent = kit.ponte;
+  $("#kitVisuais").innerHTML = kit.visuais.map(v => `<li>${esc(v)}</li>`).join("");
+  $("#kitDax").textContent = kit.dax;
+  if (S.previaKey && !S.previaKey.startsWith(kit.id + "|")) { $("#previaOut").innerHTML = ""; S.previaKey = null; }
+  atualizarCodigo();
+}
+
+function valoresKit() {
+  const v = {};
+  $$("#kitParams [data-chave]").forEach(el => { v[el.dataset.chave] = lerCampo(el); });
+  return v;
+}
+
+const atualizarCodigo = debounce(async () => {
+  const kit = S.kit, valores = valoresKit();
+  S.valores = valores;
+  const { dados } = await api("/api/codigo", { kit: kit.id, valores });
+  if (S.kit !== kit) return;
+  if (dados.erro) {
+    $("#kitErro").innerHTML = `<div class="alert warn">${esc(dados.erro)}</div>`;
+    $("#kitAbas").hidden = true; $("#kitObs").hidden = true; return;
+  }
+  $("#kitErro").innerHTML = ""; $("#kitAbas").hidden = false; $("#kitObs").hidden = !kit.observacao;
+  $("#kitM").textContent = dados.m;
+  $("#kitPy").textContent = dados.python;
+  const chave = kit.id + "|" + JSON.stringify(valores);
+  if (S.previaKey && S.previaKey !== chave) { $("#previaOut").innerHTML = ""; S.previaKey = null; }
+}, 220);
+
+$("#kitSel").addEventListener("change", e => escolherKit(e.target.value, false));
+$("#kitParams").addEventListener("input", atualizarCodigo);
+$("#kitParams").addEventListener("change", atualizarCodigo);
+
+function abrirSub(nome) {
+  S.sub = nome;
+  $$(".subtab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.sub === nome)));
+  $$("[data-subpanel]").forEach(p => { p.hidden = p.dataset.subpanel !== nome; });
+}
+$$(".subtab").forEach(b => b.addEventListener("click", () => abrirSub(b.dataset.sub)));
+
+function celula(valor) {
+  if (valor === null || valor === undefined || (typeof valor === "number" && Number.isNaN(valor))) return `<td class="null">—</td>`;
+  if (typeof valor === "number") return `<td class="num">${esc(new Intl.NumberFormat(S.lang === "pt" ? "pt-BR" : "en-US", { maximumFractionDigits: 6 }).format(valor))}</td>`;
+  let texto = String(valor);
+  const data = texto.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?$/);
+  if (data) texto = data[2] === "00:00:00" ? data[1] : `${data[1]} ${data[2]}`;
+  return `<td>${esc(texto)}</td>`;
+}
+
+$("#previaBtn").addEventListener("click", async () => {
+  const kit = S.kit, valores = valoresKit(), botao = $("#previaBtn");
+  botao.disabled = true;
+  $("#previaOut").innerHTML = `<p class="loading" style="justify-content:flex-start"><span class="spinner"></span>${esc(t("preview_spinner"))}</p>`;
+  try {
+    const { dados } = await api("/api/previa", { kit: kit.id, valores });
+    if (S.kit !== kit) return;
+    S.previaKey = kit.id + "|" + JSON.stringify(valores);
+    if (dados.erro) { $("#previaOut").innerHTML = `<div class="alert warn">${esc(dados.erro)}</div>`; return; }
+    if (dados.falha) { $("#previaOut").innerHTML = `<div class="alert err">${esc(dados.falha)}</div><p class="note">${esc(dados.detalhe)}</p>`; return; }
+    const cabeca = dados.colunas.map(c => `<th>${esc(c)}</th>`).join("");
+    const corpo = dados.linhas.map(l => `<tr>${l.map(celula).join("")}</tr>`).join("");
+    $("#previaOut").innerHTML = `<p class="note" style="margin-top:1rem">${esc(dados.resumo)}</p>
+      <div class="table-wrap"><table><thead><tr>${cabeca}</tr></thead><tbody>${corpo}</tbody></table></div>
+      ${dados.csv ? `<button class="btn btn-line" id="baixarCsv">${esc(t("download_csv"))}</button>` : ""}`;
+    if (dados.csv) $("#baixarCsv").addEventListener("click", () => baixar(new Blob(["﻿" + dados.csv], { type: "text/csv;charset=utf-8" }), dados.arquivo));
+  } catch {
+    $("#previaOut").innerHTML = `<div class="alert err">${esc(t("preview_error"))}</div>`;
+  } finally { botao.disabled = false; }
+});
+
+function baixar(blob, nome) {
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/* ============================================================
+   MONTADOR DE PROJETO
+   ============================================================ */
+function montarMontador() {
+  const montaveis = S.cfg.kits.filter(k => k.montavel);
+  if (!S.mont.iniciado) { S.mont.ids = [...S.cfg.padrao_montador]; S.mont.iniciado = true; }
+  if (S.mont.titulo === null || S.mont.tituloPadrao) { S.mont.titulo = t("mont_cover_default"); S.mont.tituloPadrao = true; }
+  $("#montTitulo").value = S.mont.titulo;
+  $("#montPicks").innerHTML = montaveis.map(k => `<label class="pick"><input type="checkbox" value="${k.id}"${S.mont.ids.includes(k.id) ? " checked" : ""}> <span>${k.icone}  ${esc(k.titulo)}</span></label>`).join("");
+  desenharParamsMontador();
+  atualizarMontador();
+}
+
+function desenharParamsMontador() {
+  const abertos = new Set($$("#montParams details[open]").map(d => d.dataset.kit));
+  $("#montParams").innerHTML = S.mont.ids.map(id => S.cfg.kits.find(k => k.id === id)).filter(k => k && k.parametros.length)
+    .map(k => `<details class="params" data-kit="${k.id}"${abertos.has(k.id) ? " open" : ""}><summary>${k.icone}  ${esc(k.titulo)}</summary>
+      <div class="fields">${k.parametros.map(p => campoHtml(k, p, "mont", (S.mont.valores[k.id] || {})[p.chave])).join("")}</div></details>`).join("");
+}
+
+function lerMontador() {
+  $$("#montParams [data-chave]").forEach(el => {
+    (S.mont.valores[el.dataset.kit] ||= {})[el.dataset.chave] = lerCampo(el);
+  });
+  return S.mont.ids.map(id => ({ id, valores: S.mont.valores[id] || {} }));
+}
+
+let pedidoMont = 0;
+const atualizarMontador = debounce(async () => {
+  const vazio = !S.mont.ids.length;
+  $("#montCorpo").hidden = vazio;
+  $("#montVazio").innerHTML = vazio ? `<div class="alert info">${esc(t("mont_empty"))}</div>` : "";
+  if (vazio) return;
+  const meu = ++pedidoMont;
+  const { dados } = await api("/api/projeto", { kits: lerMontador(), titulo: S.mont.titulo });
+  if (meu !== pedidoMont) return;
+  if (dados.erro) {
+    $("#montErro").innerHTML = `<div class="alert warn">${esc(dados.erro)}</div>`;
+    $("#montResumo").innerHTML = ""; $("#montBaixar").disabled = true; return;
+  }
+  $("#montErro").innerHTML = ""; $("#montBaixar").disabled = false;
+  const tabelas = dados.tabelas.map(x => `<li><code>${esc(x.nome)}</code> (${x.colunas} ${esc(t("mont_columns"))})${x.automatica ? ` <span class="auto">· ${esc(t("mont_auto"))}</span>` : ""}</li>`).join("");
+  const rels = dados.relacionamentos.length
+    ? `<ul>${dados.relacionamentos.map(([a, b, c, d]) => `<li><code>${esc(a)}[${esc(b)}]</code> → <code>${esc(c)}[${esc(d)}]</code></li>`).join("")}</ul>`
+    : `<p class="note">${esc(t("mont_no_rels"))}</p>`;
+  const medidas = dados.medidas.length ? `<ul>${dados.medidas.map(m => `<li>${esc(m)}</li>`).join("")}</ul>` : `<p class="note">${esc(t("mont_no_measures"))}</p>`;
+  const paginas = dados.paginas.map(p => `<li>${esc(p.nome)}${p.visuais ? ` (${p.visuais} ${esc(t("mont_visuals"))})` : ""}</li>`).join("");
+  $("#montResumo").innerHTML = `<div class="summary">
+      <div><h4>${esc(t("mont_tables"))}</h4><ul>${tabelas}</ul><h4>${esc(t("mont_pages"))}</h4><ul>${paginas}</ul></div>
+      <div><h4>${esc(t("mont_rels"))}</h4>${rels}<h4>${esc(t("mont_measures"))}</h4>${medidas}</div></div>
+    ${dados.avisos.map(a => `<p class="note">${esc(a)}</p>`).join("")}`;
+}, 260);
+
+$("#montPicks").addEventListener("change", e => {
+  const id = e.target.value;
+  if (e.target.checked) { if (!S.mont.ids.includes(id)) S.mont.ids.push(id); }
+  else S.mont.ids = S.mont.ids.filter(x => x !== id);
+  lerMontador(); desenharParamsMontador(); atualizarMontador();
+});
+$("#montParams").addEventListener("input", atualizarMontador);
+$("#montParams").addEventListener("change", atualizarMontador);
+$("#montTitulo").addEventListener("input", e => { S.mont.titulo = e.target.value; S.mont.tituloPadrao = false; atualizarMontador(); });
+
+$("#montBaixar").addEventListener("click", async () => {
+  const botao = $("#montBaixar"), rotulo = botao.textContent;
+  botao.disabled = true; botao.innerHTML = `<span class="spinner"></span> ${esc(rotulo)}`;
+  try {
+    const r = await api("/api/projeto", { kits: lerMontador(), titulo: S.mont.titulo, baixar: true });
+    if (r.blob) baixar(r.blob, "AtlasProjeto.zip");
+    else $("#montErro").innerHTML = `<div class="alert warn">${esc(r.dados?.erro || t("err_load"))}</div>`;
+  } finally { botao.disabled = false; botao.textContent = rotulo; }
+});
+
+/* ============================================================
+   GERADOR PYTHON
+   ============================================================ */
+const gerarScript = debounce(async () => {
+  const auth = $("#genAuth").value;
+  $("#genChaveBox").hidden = auth === "none";
+  $("#genChave").placeholder = auth === "header" ? "X-API-Key" : "apikey";
+  const url = $("#genUrl").value;
+  if (!url.trim()) { $("#genOut").innerHTML = `<p class="note">${esc(t("gen_hint"))}</p>`; return; }
+  const { dados } = await api("/api/script", {
+    url, caminho: $("#genCaminho").value, autenticacao: auth,
+    nome_chave: auth === "none" ? "" : $("#genChave").value, csv: $("#genCsv").checked,
+  });
+  if (dados.erro) { $("#genOut").innerHTML = `<div class="alert warn">${esc(dados.erro)}</div>`; return; }
+  let dica = t("gen_how");
+  if (auth !== "none") dica += " " + t("gen_swap_key", { placeholder: t("code_key_placeholder") });
+  $("#genOut").innerHTML = blocoCodigo("genCodigo", dados.codigo) + `<p class="note">${esc(dica)}</p>
+    <div class="bridge"><strong>${esc(t("next_title"))}</strong><p>${esc(t("next_text"))}</p></div>
+    <p><a class="btn btn-line" href="${esc(S.cfg.bdg)}" target="_blank" rel="noopener">${esc(t("open_bdg"))}</a></p>`;
+}, 250);
+["#genUrl", "#genCaminho", "#genChave"].forEach(s => $(s).addEventListener("input", gerarScript));
+["#genAuth", "#genCsv"].forEach(s => $(s).addEventListener("change", gerarScript));
+
+/* ============================================================
+   INÍCIO
+   ============================================================ */
+(async function iniciar() {
+  const aba = location.hash.slice(1);
+  abrirAba(["catalogo", "kits", "montador", "python"].includes(aba) ? aba : "catalogo");
+  abrirSub("m");
+  try {
+    await carregarConfig(idiomaInicial());
+  } catch {
+    $("#catConteudo").innerHTML = `<div class="alert err">Não foi possível carregar o site. Tente recarregar a página.</div>`;
+    return;
+  }
+  carregarCatalogo();
+  montarKits();
+  montarMontador();
+  gerarScript();
+})();
+</script>
+</body>
+</html>

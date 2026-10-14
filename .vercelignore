@@ -1,0 +1,9 @@
+# Arquivos só do app Streamlit. Sem eles, a Vercel não tenta rodar o app.py
+# e publica o index.html com as funções da pasta api/.
+app.py
+rolagem.py
+esconder_selo.py
+style.css
+requirements.txt
+.streamlit/
+__pycache__/
