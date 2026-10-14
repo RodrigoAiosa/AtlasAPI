@@ -11,6 +11,7 @@ import catalog
 import i18n
 import kits
 import montador
+import pergunta
 import rolagem
 from esconder_selo import esconder_selo_streamlit
 from i18n import t
@@ -153,9 +154,12 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True,
 )
-tab_catalog, tab_kits, tab_montador, tab_python = st.tabs(
-    [t("tab_catalog"), t("tab_kits"), t("tab_montador"), t("tab_python")]
+tab_catalog, tab_ask, tab_kits, tab_montador, tab_python = st.tabs(
+    [t("tab_catalog"), t("tab_ask"), t("tab_kits"), t("tab_montador"), t("tab_python")]
 )
+
+with tab_ask:
+    pergunta.render()
 
 with tab_montador:
     montador.render()

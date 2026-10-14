@@ -8,7 +8,7 @@ Em outubro de 2026 o catálogo reúne mais de 3.100 APIs em 56 categorias. Os n�
 
 ## O que o site oferece
 
-O site tem quatro abas.
+O site tem cinco abas.
 
 ### Catálogo de APIs
 
@@ -17,6 +17,17 @@ O site tem quatro abas.
 - Cartões em grade com descrição, autenticação, HTTPS, CORS e link para a documentação.
 - Resultados paginados de 24 em 24.
 - Script Python pronto, recolhido no próprio cartão, para os endereços que devolvem JSON direto e sem autenticação (fonte awesome-json-datasets).
+
+### Pergunta → Projeto
+
+A pessoa escreve uma pergunta de negócio, como "Os estados com mais desemprego são os de menor renda? Como isso mudou desde 2020?", e recebe o projeto do Power BI montado para respondê-la:
+
+- os kits que respondem à pergunta, escolhidos por palavras-chave (desemprego, renda, inflação, PIB, safra, rebanho, clima, câmbio, países…);
+- as opções citadas, como produto agrícola, rebanho, cidade, moedas e países;
+- o período citado ("desde 2020", "entre 2018 e 2023", "últimos 5 anos", "em 2024") aplicado aos kits que têm período;
+- uma página "Sua pergunta", com a pergunta no título, os cartões principais e os gráficos dos kits escolhidos, além das páginas do Montador.
+
+A tela mostra o que foi entendido e por quê, e deixa incluir ou retirar kits antes de baixar. Esta versão não usa IA: as regras ficam em `pergunta.py`.
 
 ### Kits Power BI
 
@@ -111,6 +122,7 @@ Algumas fontes não informam autenticação, HTTPS ou CORS; nesses cartões o ca
 ├── kits.py             Kits Power BI, Gerador Python e as telas dessas abas
 ├── kits_ibge.py        Kits do IBGE, gerados a partir da descrição de cada tabela do SIDRA
 ├── kits_i18n.py        Tradução dos kits para o inglês
+├── pergunta.py         Pergunta → Projeto: lê a pergunta e escolhe kits, opções e período
 ├── montador.py         Montador de Projeto: gera o projeto Power BI (.pbip) a partir dos kits
 ├── i18n.py             Textos da interface, seletor e detecção de idioma
 ├── style.css           Visual do site
