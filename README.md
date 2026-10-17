@@ -31,7 +31,7 @@ A tela mostra o que foi entendido e por quê, e deixa incluir ou retirar kits an
 
 ### Kits Power BI
 
-22 kits de APIs que não exigem cadastro nem chave. Em cada kit a pessoa ajusta os parâmetros (período, cidade, moeda, produto) e recebe:
+25 kits de APIs que não exigem cadastro nem chave. Em cada kit a pessoa ajusta os parâmetros (período, cidade, moeda, produto, assunto) e recebe:
 
 - a consulta em **Power Query (M)**, com colunas nomeadas e tipadas, no formato `RelativePath` que o Power BI Service aceita na atualização agendada;
 - o mesmo resultado em **Python** (`requests` + `pandas`);
@@ -49,6 +49,8 @@ A tela mostra o que foi entendido e por quê, e deixa incluir ou retirar kits an
 | Calendário e clima | Feriados nacionais · Clima histórico | BrasilAPI · Open-Meteo |
 | Política | Deputados federais | Câmara dos Deputados |
 | Internacional | Câmbio diário · Indicadores de países · Países · Terremotos no mundo | Frankfurter · Banco Mundial · USGS |
+| Clima | Previsão do tempo para até 16 dias | Open-Meteo |
+| Conhecimento e pesquisa | Livros por assunto · Publicações científicas por assunto | Open Library · Crossref |
 
 Os kits por município usam o código IBGE do município (`municipio_id`) e se relacionam entre si por ele.
 
@@ -62,10 +64,10 @@ Junta vários kits em um projeto do Power BI (`.pbip`) pronto para abrir. A pess
 - as medidas DAX de cada kit, inclusive as que só fazem sentido quando dois kits estão juntos, como PIB per capita, reunidas na tabela `Medidas` em pastas por tema e, dentro delas, subpastas por kit;
 - uma página de relatório por kit, com cartões, gráficos e tabelas iniciais, mais uma página de resumo;
 - uma capa com o título do projeto, os números do modelo, as páginas agrupadas por tema e as fontes dos dados;
-- um design por tema: cada página tem cabeçalho, cor de destaque e fundo próprios do tema do kit (economia, trabalho e renda, municípios, agronegócio, calendário e clima, internacional);
+- um design por tema: cada página tem cabeçalho, cor de destaque e fundo próprios do tema do kit (economia, trabalho e renda, municípios, agronegócio, calendário e clima, internacional, conhecimento e pesquisa);
 - as consultas em `.pq`, os scripts em Python e as medidas em `.dax`, para reaproveitar em outro arquivo.
 
-Participam 20 dos 22 kits; ficam fora "Municípios do Brasil" e "Deputados federais", cujas colunas vêm direto da API, sem nomes fixos.
+Participam 23 dos 25 kits; ficam fora "Municípios do Brasil" e "Deputados federais", cujas colunas vêm direto da API, sem nomes fixos.
 
 ### Gerador Python
 

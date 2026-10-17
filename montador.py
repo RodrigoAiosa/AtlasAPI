@@ -33,6 +33,12 @@ ESQUEMAS = {
                   ("populacao", "int64")],
     "clima": [("cidade", "string"), ("data", "date"), ("temp_max_c", "double"), ("temp_min_c", "double"),
               ("chuva_mm", "double")],
+    "previsao_clima": [("cidade", "string"), ("data", "date"), ("temp_max_c", "double"),
+                       ("temp_min_c", "double"), ("chuva_mm", "double")],
+    "livros": [("obra_id", "string"), ("titulo", "string"), ("autor", "string"),
+               ("ano_publicacao", "int64"), ("edicoes", "int64"), ("data", "date")],
+    "crossref": [("doi", "string"), ("titulo", "string"), ("editora", "string"),
+                 ("tipo", "string"), ("citacoes", "int64"), ("data", "date")],
     "indicadores": [("pais_iso3", "string"), ("pais", "string"), ("indicador_id", "string"),
                     ("indicador", "string"), ("ano", "int64"), ("valor", "double")],
     "paises": [("pais_iso3", "string"), ("pais_iso2", "string"), ("pais", "string"), ("regiao", "string"),
@@ -44,7 +50,7 @@ ESQUEMAS = {
 TEXTO_IBGE = {"municipio", "uf", "uf_nome", "produto", "rebanho"}
 INTEIRO_IBGE = {"municipio_id", "uf_id", "ano", "trimestre", "populacao", "pib_mil_reais", "pib_milhoes_reais", "cabecas"}
 # Colunas numéricas que identificam ou localizam; somar não faz sentido.
-SEM_SOMA = {"municipio_id", "uf_id", "ano", "trimestre", "latitude", "longitude", "tsunami", "relevancia"}
+SEM_SOMA = {"municipio_id", "uf_id", "ano", "ano_publicacao", "trimestre", "latitude", "longitude", "tsunami", "relevancia"}
 
 M_CALENDARIO = '''let
     Inicio = #date(1980, 1, 1),
@@ -316,6 +322,15 @@ VISUAIS = {
                "principais": [("linha", "Cotação por moeda", _DATA, "Taxa Média", ("fCambio", "moeda"))]},
     "clima": {"cartoes": ["Chuva Total (mm)", "Dias com Chuva"],
               "principais": [("colunas", "Chuva por dia (mm)", _DATA, "Chuva Total (mm)")]},
+    "previsao_clima": {"cartoes": ["Temperatura Máxima Prevista", "Chuva Prevista (mm)"],
+                       "principais": [("linha", "Temperatura máxima prevista", _DATA, "Temperatura Máxima Prevista"),
+                                      ("colunas", "Chuva prevista por dia (mm)", _DATA, "Chuva Prevista (mm)")]},
+    "livros": {"cartoes": ["Obras", "Edições"],
+               "principais": [("linha", "Obras por ano de publicação", _DATA, "Obras"),
+                              ("tabela", "Obras encontradas", [("fLivros", "titulo"), ("fLivros", "autor")], ["Edições"])]},
+    "crossref": {"cartoes": ["Publicações", "Citações"],
+                 "principais": [("linha", "Publicações por ano", _DATA, "Publicações"),
+                                ("colunas", "Citações por ano", _DATA, "Citações")]},
     "feriados": {"cartoes": ["Dias Úteis"],
                  "principais": [("tabela", "Feriados nacionais",
                                  [("dFeriado", "data"), ("dFeriado", "feriado"), ("dFeriado", "tipo")], [])]},
@@ -403,6 +418,7 @@ TEMAS = {
     "agro": {"cor_clara": "#A3E635", "cor": "#4D7C0F", "fundo": "#F5F8EF", "pt": "Agronegócio", "en": "Agribusiness"},
     "calendario": {"cor_clara": "#FB923C", "cor": "#C2410C", "fundo": "#FDF5F0", "pt": "Calendário e clima", "en": "Calendar and weather"},
     "internacional": {"cor_clara": "#F472B6", "cor": "#BE185D", "fundo": "#FDF3F7", "pt": "Internacional", "en": "International"},
+    "conhecimento": {"cor_clara": "#818CF8", "cor": "#4338CA", "fundo": "#F5F5FF", "pt": "Conhecimento e pesquisa", "en": "Knowledge and research"},
     "resumo": {"cor_clara": "#D1D5DB", "cor": "#111827", "fundo": "#F5F6F8", "pt": "Visão geral", "en": "Overview"},
 }
 TEMA_DO_KIT = {
@@ -411,8 +427,9 @@ TEMA_DO_KIT = {
     "desemprego": "trabalho", "rendimento": "trabalho",
     "populacao": "municipios", "censo2022": "municipios", "pib_municipios": "municipios", "alfabetizacao": "municipios",
     "producao_agricola": "agro", "rebanhos": "agro",
-    "feriados": "calendario", "clima": "calendario",
+    "feriados": "calendario", "clima": "calendario", "previsao_clima": "calendario",
     "cambio": "internacional", "indicadores": "internacional", "paises": "internacional", "terremotos": "internacional",
+    "livros": "conhecimento", "crossref": "conhecimento",
 }
 _TEXTO, _TEXTO_SUAVE, _LINHA, _BRANCO = "#111827", "#6B7280", "#E5E7EB", "#FFFFFF"
 _FONTE = "Segoe UI"

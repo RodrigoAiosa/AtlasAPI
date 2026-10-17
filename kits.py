@@ -682,6 +682,238 @@ resposta.raise_for_status()
 
 df = pd.DataFrame(resposta.json()["dados"])''',
     },
+    {
+        "id": "previsao_clima",
+        "icone": "🌤️",
+        "titulo": "Previsão do tempo",
+        "fonte": "Open-Meteo Forecast API",
+        "docs": "https://open-meteo.com/en/docs",
+        "resumo": "Previsão diária de temperatura e chuva para até 16 dias em uma capital brasileira.",
+        "papel": "Fato",
+        "tabela": "fPrevisaoClima",
+        "colunas": "cidade, data, temp_max_c, temp_min_c, chuva_mm",
+        "parametros": [
+            {"chave": "CIDADE", "rotulo": "Cidade", "tipo": "opcoes", "opcoes": CAPITAIS},
+            {"chave": "DIAS", "rotulo": "Dias de previsão", "tipo": "opcoes", "opcoes": {"7 dias": "7", "10 dias": "10", "16 dias": "16"}},
+        ],
+        "observacao": "A API gratuita disponibiliza previsões de até 16 dias. A previsão muda a cada atualização e não substitui dados observados.",
+        "ponte": "Relacione a data com dCalendario e use a previsão para planejar vendas, estoque ou escala de equipes nos próximos dias.",
+        "visuais": ["Temperatura máxima prevista por dia", "Chuva prevista por dia", "Dias com maior chuva prevista"],
+        "dax": '''Temperatura Máxima Prevista = MAX ( fPrevisaoClima[temp_max_c] )
+
+Chuva Prevista (mm) = SUM ( fPrevisaoClima[chuva_mm] )''',
+        "m": '''let
+    Cidade = "«CIDADE»",
+    Latitude = "«LATITUDE»",
+    Longitude = "«LONGITUDE»",
+    Dias = "«DIAS»",
+    Fonte = Json.Document(Web.Contents("https://api.open-meteo.com", [
+        RelativePath = "v1/forecast",
+        Query = [
+            latitude = Latitude,
+            longitude = Longitude,
+            daily = "temperature_2m_max,temperature_2m_min,precipitation_sum",
+            forecast_days = Dias,
+            timezone = "America/Sao_Paulo"
+        ]
+    ])),
+    Diario = Fonte[daily],
+    Tabela = Table.FromColumns(Record.FieldValues(Diario), Record.FieldNames(Diario)),
+    Renomeada = Table.RenameColumns(Tabela, {
+        {"time", "data"}, {"temperature_2m_max", "temp_max_c"},
+        {"temperature_2m_min", "temp_min_c"}, {"precipitation_sum", "chuva_mm"}
+    }),
+    ComCidade = Table.AddColumn(Renomeada, "cidade", each Cidade, type text),
+    Resultado = Table.TransformColumnTypes(ComCidade, {
+        {"data", type date}, {"temp_max_c", type number},
+        {"temp_min_c", type number}, {"chuva_mm", type number}
+    })
+in
+    Resultado''',
+        "python": '''import pandas as pd
+import requests
+
+CIDADE = "«CIDADE»"
+LATITUDE = «LATITUDE»
+LONGITUDE = «LONGITUDE»
+DIAS = «DIAS»
+
+resposta = requests.get(
+    "https://api.open-meteo.com/v1/forecast",
+    params={
+        "latitude": LATITUDE,
+        "longitude": LONGITUDE,
+        "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
+        "forecast_days": DIAS,
+        "timezone": "America/Sao_Paulo",
+    },
+    timeout=30,
+)
+resposta.raise_for_status()
+df = pd.DataFrame(resposta.json()["daily"]).rename(columns={
+    "time": "data", "temperature_2m_max": "temp_max_c",
+    "temperature_2m_min": "temp_min_c", "precipitation_sum": "chuva_mm",
+})
+df["data"] = pd.to_datetime(df["data"])
+df.insert(0, "cidade", CIDADE)''',
+    },
+    {
+        "id": "livros",
+        "icone": "📚",
+        "titulo": "Livros por assunto",
+        "fonte": "Open Library",
+        "docs": "https://openlibrary.org/dev/docs/api/search",
+        "resumo": "Obras encontradas por assunto, com autor, ano da primeira publicação e quantidade de edições.",
+        "papel": "Fato",
+        "tabela": "fLivros",
+        "colunas": "obra_id, titulo, autor, ano_publicacao, edicoes, data",
+        "parametros": [
+            {"chave": "CONSULTA", "rotulo": "Assunto ou termo", "tipo": "texto", "padrao": "climate", "padrao_re": r"[A-Za-zÀ-ÿ0-9 .'-]{2,80}", "ajuda": "Use de 2 a 80 letras, números ou espaços."},
+            {"chave": "LIMITE", "rotulo": "Máximo de obras", "tipo": "opcoes", "opcoes": {"25 obras": "25", "50 obras": "50", "100 obras": "100"}},
+        ],
+        "observacao": "A busca devolve obras relevantes, não todas as edições. O esquema da busca pode mudar; confira a documentação se algum campo deixar de aparecer.",
+        "ponte": "Compare a quantidade de obras por ano de publicação e os autores mais frequentes. O limite evita carregar resultados excessivos em uma atualização.",
+        "visuais": ["Obras por ano da primeira publicação", "Obras por autor", "Edições por obra"],
+        "dax": '''Obras = DISTINCTCOUNT ( fLivros[obra_id] )
+
+Edições = SUM ( fLivros[edicoes] )''',
+        "m": '''let
+    Consulta = "«CONSULTA»",
+    Limite = "«LIMITE»",
+    Fonte = Json.Document(Web.Contents("https://openlibrary.org", [
+        RelativePath = "search.json",
+        Query = [
+            q = Consulta,
+            limit = Limite,
+            fields = "key,title,author_name,first_publish_year,edition_count"
+        ]
+    ])),
+    Tabela = Table.FromRecords(Fonte[docs], null, MissingField.UseNull),
+    ComAutor = Table.AddColumn(Tabela, "autor", each try [author_name]{0} otherwise null, type text),
+    ComData = Table.AddColumn(ComAutor, "data", each try #date(Number.From([first_publish_year]), 1, 1) otherwise null, type date),
+    Selecionadas = Table.SelectColumns(ComData, {"key", "title", "autor", "first_publish_year", "edition_count", "data"}),
+    Renomeada = Table.RenameColumns(Selecionadas, {
+        {"key", "obra_id"}, {"title", "titulo"},
+        {"first_publish_year", "ano_publicacao"}, {"edition_count", "edicoes"}
+    }),
+    Resultado = Table.TransformColumnTypes(Renomeada, {{"ano_publicacao", Int64.Type}, {"edicoes", Int64.Type}})
+in
+    Resultado''',
+        "python": '''import pandas as pd
+import requests
+
+CONSULTA = "«CONSULTA»"
+LIMITE = «LIMITE»
+resposta = requests.get(
+    "https://openlibrary.org/search.json",
+    params={
+        "q": CONSULTA,
+        "limit": LIMITE,
+        "fields": "key,title,author_name,first_publish_year,edition_count",
+    },
+    timeout=30,
+)
+resposta.raise_for_status()
+df = pd.DataFrame(resposta.json()["docs"])
+df["autor"] = df["author_name"].apply(lambda nomes: nomes[0] if isinstance(nomes, list) and nomes else None)
+df["data"] = pd.to_datetime(df["first_publish_year"].astype("Int64").astype(str) + "-01-01", errors="coerce")
+df = df.rename(columns={
+    "key": "obra_id", "title": "titulo",
+    "first_publish_year": "ano_publicacao", "edition_count": "edicoes",
+})
+df = df[["obra_id", "titulo", "autor", "ano_publicacao", "edicoes", "data"]]''',
+    },
+    {
+        "id": "crossref",
+        "icone": "🔬",
+        "titulo": "Publicações científicas por assunto",
+        "fonte": "Crossref REST API",
+        "docs": "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+        "resumo": "Metadados de artigos, livros e outros trabalhos acadêmicos, com editora, tipo, ano e citações.",
+        "papel": "Fato",
+        "tabela": "fPublicacao",
+        "colunas": "doi, titulo, editora, tipo, citacoes, data",
+        "parametros": [
+            {"chave": "CONSULTA", "rotulo": "Assunto ou termo", "tipo": "texto", "padrao": "climate change", "padrao_re": r"[A-Za-zÀ-ÿ0-9 .'-]{2,80}", "ajuda": "Use de 2 a 80 letras, números ou espaços."},
+            {"chave": "ANO_INICIAL", "rotulo": "Ano inicial", "tipo": "inteiro", "padrao": 2020, "min": 1900, "max": 2100},
+            {"chave": "ANO_FINAL", "rotulo": "Ano final", "tipo": "inteiro", "padrao": 2025, "min": 1900, "max": 2100},
+            {"chave": "LIMITE", "rotulo": "Máximo de registros", "tipo": "opcoes", "opcoes": {"25 registros": "25", "50 registros": "50", "100 registros": "100"}},
+        ],
+        "observacao": "Não exige cadastro. A busca retorna uma amostra ordenada por relevância e limitada ao número escolhido; metadados e citações são informados pelos depositantes.",
+        "ponte": "Analise a evolução anual das publicações e das citações sobre um tema. Relacione data com dCalendario e compare termos, editoras ou tipos de publicação em consultas separadas.",
+        "visuais": ["Publicações por ano", "Citações por ano", "Publicações por editora"],
+        "dax": '''Publicações = COUNTROWS ( fPublicacao )
+
+Citações = SUM ( fPublicacao[citacoes] )''',
+        "m": '''let
+    Consulta = "«CONSULTA»",
+    AnoInicial = "«ANO_INICIAL»",
+    AnoFinal = "«ANO_FINAL»",
+    Limite = "«LIMITE»",
+    Fonte = Json.Document(Web.Contents("https://api.crossref.org", [
+        RelativePath = "works",
+        Query = [
+            #"query.bibliographic" = Consulta,
+            filter = "from-pub-date:" & AnoInicial & "-01-01,until-pub-date:" & AnoFinal & "-12-31",
+            rows = Limite,
+            select = "DOI,title,publisher,type,published,published-print,published-online,issued,is-referenced-by-count"
+        ]
+    ])),
+    Tabela = Table.FromRecords(Fonte[message][items], null, MissingField.UseNull),
+    ComTitulo = Table.AddColumn(Tabela, "titulo", each try [title]{0} otherwise null, type text),
+    ComData = Table.AddColumn(ComTitulo, "data", each
+        let
+            Partes = try [published][#"date-parts"]{0} otherwise
+                try [published-print][#"date-parts"]{0} otherwise
+                try [published-online][#"date-parts"]{0} otherwise
+                try [issued][#"date-parts"]{0} otherwise null,
+            Ano = if Partes = null then null else try Number.From(Partes{0}) otherwise null,
+            Mes = if Partes = null or List.Count(Partes) < 2 then 1 else try Number.From(Partes{1}) otherwise 1,
+            Dia = if Partes = null or List.Count(Partes) < 3 then 1 else try Number.From(Partes{2}) otherwise 1
+        in
+            if Ano = null then null else try #date(Ano, Mes, Dia) otherwise null, type date),
+    Selecionadas = Table.SelectColumns(ComData, {"DOI", "titulo", "publisher", "type", "is-referenced-by-count", "data"}),
+    Renomeada = Table.RenameColumns(Selecionadas, {
+        {"DOI", "doi"}, {"publisher", "editora"}, {"type", "tipo"}, {"is-referenced-by-count", "citacoes"}
+    }),
+    Resultado = Table.TransformColumnTypes(Renomeada, {{"citacoes", Int64.Type}})
+in
+    Resultado''',
+        "python": '''import pandas as pd
+import requests
+
+CONSULTA = "«CONSULTA»"
+ANO_INICIAL = «ANO_INICIAL»
+ANO_FINAL = «ANO_FINAL»
+LIMITE = «LIMITE»
+resposta = requests.get(
+    "https://api.crossref.org/works",
+    params={
+        "query.bibliographic": CONSULTA,
+        "filter": f"from-pub-date:{ANO_INICIAL}-01-01,until-pub-date:{ANO_FINAL}-12-31",
+        "rows": LIMITE,
+    "select": "DOI,title,publisher,type,published,published-print,published-online,issued,is-referenced-by-count",
+    },
+    timeout=30,
+)
+resposta.raise_for_status()
+df = pd.json_normalize(resposta.json()["message"]["items"])
+df["titulo"] = df["title"].apply(lambda titulos: titulos[0] if isinstance(titulos, list) and titulos else None)
+def data_publicacao(publicado):
+    partes = (publicado or {}).get("date-parts") or []
+    if not partes or not partes[0]:
+        return pd.NaT
+    p = partes[0]
+    return pd.to_datetime(f"{int(p[0]):04d}-{int(p[1]) if len(p) > 1 else 1:02d}-{int(p[2]) if len(p) > 2 else 1:02d}", errors="coerce")
+campo_data = next((campo for campo in ("published", "published-print", "published-online", "issued") if campo in df.columns), None)
+df["data"] = df[campo_data].apply(data_publicacao) if campo_data else pd.NaT
+df = df.rename(columns={
+    "DOI": "doi", "publisher": "editora", "type": "tipo",
+    "is-referenced-by-count": "citacoes",
+})
+df = df[["doi", "titulo", "editora", "tipo", "citacoes", "data"]]
+df["citacoes"] = pd.to_numeric(df["citacoes"], errors="coerce").fillna(0).astype("int64")''',
+    },
 ]
 
 
