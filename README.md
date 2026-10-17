@@ -90,7 +90,7 @@ O código gerado pelos kits usa nomes de tabelas e colunas em português nos doi
 
 ## Fontes do catálogo
 
-O catálogo é montado ao vivo a partir de sete repositórios do GitHub, com cache de 30 minutos.
+O catálogo é montado ao vivo a partir de nove fontes do GitHub e APIs.guru, com cache de 30 minutos.
 
 | Fonte | Papel |
 |---|---|
@@ -101,14 +101,18 @@ O catálogo é montado ao vivo a partir de sete repositórios do GitHub, com cac
 | [n0shake/Public-APIs](https://github.com/n0shake/Public-APIs) | APIs de grandes empresas |
 | [APIs-guru/graphql-apis](https://github.com/APIs-guru/graphql-apis) | APIs em GraphQL |
 | [jdorfman/awesome-json-datasets](https://github.com/jdorfman/awesome-json-datasets) | Endereços que devolvem JSON sem autenticação |
+| [dspinellis/awesome-rest-apis](https://github.com/dspinellis/awesome-rest-apis) | APIs REST abertas, sem cadastro ou pagamento, organizadas por tema |
+| [APIs-guru/openapi-directory](https://github.com/APIs-guru/openapi-directory) | Diretório de definições OpenAPI; metadados lidos pela [API pública do projeto](https://apis.guru/api-doc/) |
 
 Como as fontes são unidas (`catalog.py`):
 
 - A fonte principal entra inteira. As demais só acrescentam o que é novo, na ordem da tabela.
-- É duplicata o item com o mesmo nome, o mesmo endereço ou o mesmo domínio de outro já listado. Domínios que hospedam muitas APIs, como github.com, não contam para a última regra.
+- É duplicata o item com o mesmo nome, o mesmo endereço ou, na maioria das fontes, o mesmo domínio de outro já listado. Fontes que reúnem vários serviços no mesmo host, como os conjuntos de dados e o diretório OpenAPI, podem manter APIs distintas do mesmo domínio.
 - As categorias de cada fonte são convertidas para as do site.
 - Itens de conteúdo adulto são descartados.
 - Se uma fonte extra ficar fora do ar, o site continua com as demais e mostra um aviso.
+
+O diretório APIs.guru inclui APIs públicas documentadas, mas algumas podem exigir cadastro ou pagamento. Seus links apontam para as especificações OpenAPI, não necessariamente para endpoints de dados prontos para consulta. Quando a definição não informa autenticação, o cartão mostra "Não informado". Confira a documentação e o endpoint antes de usar o Gerador Python.
 
 Algumas fontes não informam autenticação, HTTPS ou CORS; nesses cartões o campo aparece como "Não informado". Essas informações podem mudar e devem ser confirmadas na documentação de cada API.
 
@@ -173,7 +177,7 @@ O app precisa de internet para baixar o catálogo do GitHub e para a prévia dos
 
 ## Créditos
 
-O catálogo existe graças ao trabalho das comunidades que mantêm os sete repositórios listados em "Fontes do catálogo". Os dados dos kits vêm de IBGE, Banco Central do Brasil, Câmara dos Deputados, BrasilAPI, Open-Meteo, Frankfurter, Banco Mundial e USGS.
+O catálogo existe graças ao trabalho das comunidades que mantêm as fontes listadas em "Fontes do catálogo". Os dados dos kits vêm de IBGE, Banco Central do Brasil, Câmara dos Deputados, BrasilAPI, Open-Meteo, Frankfurter, Banco Mundial e USGS.
 
 
 ## API HTTP (Vercel)

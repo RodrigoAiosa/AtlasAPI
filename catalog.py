@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 import requests
 
 JSON_DATASETS = "jdorfman/awesome-json-datasets"
+OPENAPI_DIRECTORY = "APIs-guru/openapi-directory"
 COLUMNS = ["name", "description", "auth", "https", "cors", "url", "category", "source"]
 
 PRIMARY = {
@@ -48,6 +49,13 @@ EXTRAS = (
         "name": JSON_DATASETS,
         "format": "json_datasets",
         "urls": _readme("jdorfman/awesome-json-datasets"),
+        "dedupe_host": False,
+    },
+    {"name": "dspinellis/awesome-rest-apis", "format": "awesome_rest", "urls": _readme("dspinellis/awesome-rest-apis")},
+    {
+        "name": OPENAPI_DIRECTORY,
+        "format": "openapi_directory",
+        "urls": ("https://api.apis.guru/v2/list.json",),
         "dedupe_host": False,
     },
 )
@@ -330,6 +338,63 @@ def parse_json_datasets(content: str) -> list[dict]:
     return rows
 
 
+AWESOME_REST_CATEGORIES = {
+    "bioinformatics": "Science & Math", "business and finance": "Finance",
+    "computer networking": "Development", "computer software": "Development",
+    "entertainment": "Entertainment", "general": "Open Data", "medicine": "Health",
+    "software development": "Development", "sports": "Sports & Fitness",
+    "transport": "Transportation",
+}
+
+
+def parse_awesome_rest(content: str) -> list[dict]:
+    """dspinellis/awesome-rest-apis: APIs abertas listadas em bullets por seção."""
+    rows = []
+    category = ""
+    for line in content.splitlines():
+        heading = re.match(r"^##\s+(.+?)\s*#*\s*$", line.strip())
+        if heading:
+            category = AWESOME_REST_CATEGORIES.get(clean_cell(heading.group(1)).casefold(), "")
+            continue
+        item = re.match(r"^\s*[-*]\s+\[([^\]]+)\]\((https?://[^)\s]+)\)\s*[–—-]\s*(.*)$", line)
+        if not item or not category:
+            continue
+        name, url, description = item.groups()
+        description = re.sub(r"\s*;\s*\[[^\]]*\]\(https?://[^)]+\).*", "", description)
+        rows.append(_row(clean_cell(name), clean_cell(description), url, category, auth="No"))
+    return rows
+
+
+OPENAPI_CATEGORIES = {
+    "business": "Business", "finance": "Finance", "financial": "Finance",
+    "cloud": "Cloud Storage & File Sharing", "communication": "Communication",
+    "entertainment": "Entertainment", "environment": "Environment",
+    "ecommerce": "Shopping", "media": "Media", "messaging": "Communication",
+    "payment": "Finance", "payments": "Finance", "security": "Security",
+    "social": "Social", "tools": "Development", "transport": "Transportation",
+}
+
+
+def parse_openapi_directory(content: str) -> list[dict]:
+    """APIs.guru: usa metadados em cache, sem buscar cada especificação individual."""
+    data = json.loads(content)
+    rows = []
+    for provider, entry in data.items():
+        version = entry.get("versions", {}).get(entry.get("preferred"), {})
+        info = version.get("info") or {}
+        title = clean_cell(info.get("title", ""))
+        url = str(version.get("link", "")).strip()
+        if not title or not url.startswith(("https://", "http://")):
+            continue
+        categories = info.get("x-apisguru-categories", []) or []
+        category = next((OPENAPI_CATEGORIES[c.casefold()] for c in categories if isinstance(c, str) and c.casefold() in OPENAPI_CATEGORIES), "Development")
+        if provider.casefold() not in title.casefold():
+            title = f"{title} ({provider})"
+        auth = "Yes" if info.get("x-apiClientRegistration") else "Unknown"
+        rows.append(_row(title, clean_cell(info.get("description", "")), url, category, auth=auth))
+    return rows
+
+
 def _name_key(name: str) -> str:
     key = re.sub(r"\(.*?\)", "", name.casefold())
     key = re.sub(r"\b(api|apis|the)\b", "", key)
@@ -401,6 +466,8 @@ PARSERS = {
     "n0shake": parse_n0shake,
     "graphql": parse_graphql,
     "json_datasets": parse_json_datasets,
+    "awesome_rest": parse_awesome_rest,
+    "openapi_directory": parse_openapi_directory,
 }
 
 
