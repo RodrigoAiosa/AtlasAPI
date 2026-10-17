@@ -2,7 +2,7 @@
 
 Diretório de APIs públicas e gratuitas, com consultas prontas para Power BI. Feito em Python com Streamlit.
 
-**Acesse:** https://atlasapi.streamlit.app/
+**Acesse:** https://atlasapi-delta.vercel.app/
 
 Em outubro de 2026 o catálogo reúne mais de 3.100 APIs em 56 categorias. Os números aparecem no topo do site e mudam sozinhos conforme as fontes são atualizadas.
 
