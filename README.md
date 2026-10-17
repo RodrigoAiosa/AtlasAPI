@@ -174,3 +174,133 @@ O app precisa de internet para baixar o catálogo do GitHub e para a prévia dos
 ## Créditos
 
 O catálogo existe graças ao trabalho das comunidades que mantêm os sete repositórios listados em "Fontes do catálogo". Os dados dos kits vêm de IBGE, Banco Central do Brasil, Câmara dos Deputados, BrasilAPI, Open-Meteo, Frankfurter, Banco Mundial e USGS.
+
+
+## API HTTP (Vercel)
+
+Além do app Streamlit, este repositório contém uma API HTTP serverless na pasta `api/`, publicada pela Vercel. Ela expõe o catálogo, a configuração dos kits Power BI, a geração de consultas e scripts, a prévia dos dados e a montagem de projetos. Os endpoints não exigem autenticação.
+
+Defina `BASE_URL` como o domínio atribuído ao deployment da Vercel, sem a barra final. Por exemplo:
+
+```bash
+export BASE_URL="https://seu-deployment.vercel.app"
+```
+
+Os exemplos abaixo usam `curl` e pressupõem que o deployment está ativo. Para chamadas `POST`, envie JSON com `Content-Type: application/json`. Os campos `lang` aceitam `pt` ou `en`; quando omitidos, é usada a configuração padrão da aplicação. O corpo das requisições tem limite de 200 KB.
+
+### `GET /api/config`
+
+Retorna os idiomas disponíveis, textos da interface, APIs em destaque, definição completa dos kits e seus parâmetros. Use `lang=pt` ou `lang=en`. Com `lang=auto` (padrão), o idioma é detectado pelos cabeçalhos da requisição.
+
+```bash
+curl "$BASE_URL/api/config?lang=pt"
+```
+
+A resposta inclui `lang`, `idiomas`, `textos`, `destaques`, `kits`, `bdg` e `padrao_montador`. Cada kit contém seu `id`, descrição, fonte, colunas, parâmetros e a indicação `montavel`. Consulte esta resposta para descobrir os IDs de kit e os parâmetros aceitos em `valores` — por exemplo, os parâmetros do kit `bcb` incluem `SERIE`, `DATA_INICIAL` e `DATA_FINAL`.
+
+### `GET /api/catalogo`
+
+Retorna o catálogo unificado de APIs. O parâmetro opcional `lang` aceita `pt` ou `en`.
+
+```bash
+curl "$BASE_URL/api/catalogo?lang=pt"
+```
+
+A resposta tem a forma `{"apis": [...], "aviso": "..."}`. Cada item pode incluir `n` (nome), `u` (URL), `c` (categoria), `d` (descrição), `a` (autenticação), `h` (HTTPS), `o` (CORS) e, quando disponível, `s` (script Python). Os campos `d0` e `c0` preservam a descrição e categoria originais quando foram traduzidas. Se uma fonte adicional estiver indisponível, `aviso` informa a falha parcial; uma falha ao carregar a fonte principal retorna status HTTP 503 e um objeto com `erro`, `dica` e `apis`.
+
+### `POST /api/codigo`
+
+Gera os códigos Power Query (M) e Python de um kit a partir dos parâmetros informados.
+
+```bash
+curl -X POST "$BASE_URL/api/codigo" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kit": "bcb",
+    "valores": {
+      "SERIE": 432,
+      "DATA_INICIAL": "2024-01-01",
+      "DATA_FINAL": "2024-12-31"
+    },
+    "lang": "pt"
+  }'
+```
+
+`kit` é o ID do kit, `valores` é um objeto cujas chaves são definidas pelos parâmetros retornados em `/api/config`, e `lang` é opcional. A resposta de sucesso contém `m` (consulta Power Query) e `python` (script Python). Em caso de erro de validação, a resposta pode conter `erro`; kit desconhecido ou payload malformado pode resultar em HTTP 400.
+
+### `POST /api/previa`
+
+Executa o script Python gerado para um kit e retorna uma prévia dos dados. A execução consulta a API externa de origem do kit, portanto depende da disponibilidade dessa fonte.
+
+```bash
+curl -X POST "$BASE_URL/api/previa" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kit": "bcb",
+    "valores": {
+      "SERIE": 432,
+      "DATA_INICIAL": "2024-01-01",
+      "DATA_FINAL": "2024-01-31"
+    },
+    "lang": "pt"
+  }'
+```
+
+A resposta de sucesso contém `resumo`, `colunas`, `linhas`, `csv` e `arquivo`. A tabela é limitada a 200 linhas em `linhas`; `csv` contém o CSV completo somente quando ele não ultrapassa 8 MB, caso contrário é `null`. Se a API externa falhar, a resposta traz `falha` e `detalhe`. Erros de validação retornam `erro`; kit desconhecido pode resultar em HTTP 400.
+
+### `POST /api/projeto`
+
+Gera um resumo do modelo do projeto Power BI ou, com `baixar: true`, baixa o projeto compactado em ZIP. `kits` é uma lista de objetos com `id` e, opcionalmente, `valores`. No máximo 30 escolhas válidas são consideradas. `titulo` é opcional e limitado a 60 caracteres; `lang` também é opcional.
+
+Para obter o resumo JSON:
+
+```bash
+curl -X POST "$BASE_URL/api/projeto" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "titulo": "Indicadores econômicos",
+    "kits": [
+      {
+        "id": "bcb",
+        "valores": {
+          "SERIE": 433,
+          "DATA_INICIAL": "2024-01-01",
+          "DATA_FINAL": "2024-12-31"
+        }
+      }
+    ],
+    "lang": "pt"
+  }'
+```
+
+O resumo contém `tabelas`, `relacionamentos`, `medidas`, `paginas` e `avisos`. Para baixar o ZIP, acrescente `"baixar": true` ao mesmo corpo. A resposta será `application/zip`, com o nome do projeto no header `Content-Disposition`; use `curl -o projeto.zip` para salvar o arquivo. Erros de montagem retornam HTTP 400 com `{"erro": "..."}`.
+
+```bash
+curl -X POST "$BASE_URL/api/projeto" \
+  -H "Content-Type: application/json" \
+  -o projeto.zip \
+  -d '{"titulo":"Indicadores econômicos","kits":[{"id":"bcb","valores":{"SERIE":433,"DATA_INICIAL":"2024-01-01","DATA_FINAL":"2024-12-31"}}],"baixar":true,"lang":"pt"}'
+```
+
+### `POST /api/script`
+
+Gera um script Python genérico para consultar um endpoint JSON. Este endpoint gera o código, mas não executa a consulta.
+
+```bash
+curl -X POST "$BASE_URL/api/script" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://api.example.com/v1/items",
+    "caminho": "data.items",
+    "autenticacao": "header",
+    "nome_chave": "X-API-Key",
+    "csv": true,
+    "lang": "pt"
+  }'
+```
+
+Campos: `url` (URL do endpoint), `caminho` (caminho opcional até a lista/objeto de dados no JSON), `autenticacao` (`none`, `header` ou `query`), `nome_chave` (nome do cabeçalho ou parâmetro de query da chave) e `csv` (se o script gerado deve incluir exportação CSV). A resposta de sucesso contém `codigo`; se a URL ou as opções forem inválidas, pode conter `erro`.
+
+### Cache e implantação
+
+`/api/config` e `/api/catalogo` usam cache na borda para respostas com idioma explícito; o catálogo tem cache de borda de 30 minutos e a configuração, de 24 horas. A configuração com `lang=auto` não é armazenada em cache compartilhado. Respostas de geração e downloads não são armazenados em cache. Para publicar ou atualizar os endpoints, conecte o repositório à Vercel e faça o deploy do projeto; a configuração de funções está em `vercel.json` e as dependências Python da API em `pyproject.toml`.
