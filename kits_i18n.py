@@ -204,6 +204,65 @@ DIVIDE ( [Faturamento], [População] )''',
 }
 
 # Kits do IBGE gerados em kits_ibge.py.
+KITS["en"].update({
+    "focus": {
+        "titulo": "Market expectations (Focus survey)",
+        "resumo": "What the market expects for IPCA, GDP, Selic, the exchange rate and IGP-M each year, day by day.",
+        "observacao": "Each row is the Focus statistic on a date for a reference year, based on all respondents in the last 30 days (baseCalculo = 0).",
+        "ponte": "Compare expectations with what happened: combine this kit with IPCA or Selic and show the gap between the forecast and the outcome.",
+        "visuais": ["Median expectation by reference year over time", "Range between minimum and maximum", "Card with the latest expectation"],
+        "parametros": {
+            "INDICADOR": {"rotulo": "Indicator", "opcoes": ["IPCA (inflation)", "Total GDP", "Selic", "Exchange rate", "IGP-M"]},
+            "DATA_INICIAL": {"rotulo": "Start date"},
+        },
+    },
+    "ipea": {
+        "titulo": "Ipeadata series (Brazil)",
+        "resumo": "Monthly series from Ipeadata: IGP-M, minimum wage, monthly Selic and average dollar rate.",
+        "observacao": "Ipeadata has thousands of series. To use another one, change the series code (SERCODIGO) in the query; codes are listed at ipeadata.gov.br.",
+        "ponte": "The real minimum wage is great for deflating values from a BI Data Generator dataset and comparing periods in reais of equal purchasing power.",
+        "visuais": ["Series over time", "Card with the latest value", "12-month change"],
+        "parametros": {
+            "SERIE": {"rotulo": "Series", "opcoes": ["IGP-M (% per month)", "Minimum wage in force (R$)", "Real minimum wage (R$ of latest month)",
+                                                    "Selic accumulated in the month (% per month)", "Commercial dollar, monthly average (R$)"]},
+        },
+    },
+    "cripto": {
+        "titulo": "Cryptocurrencies in Brazilian reais",
+        "resumo": "Daily open, high, low, close and volume of cryptocurrencies in reais.",
+        "observacao": "Prices from the Mercado Bitcoin exchange, in daily candles (UTC). Volume is in the cryptocurrency itself.",
+        "ponte": "Use it as a price series to practice investment analysis: return, volatility and comparison with the dollar (Daily exchange rates kit) on the same dCalendario.",
+        "visuais": ["Closing price line", "Daily volume columns", "Change over the period"],
+        "parametros": {
+            "MOEDA": {"rotulo": "Cryptocurrency"},
+            "DATA_INICIAL": {"rotulo": "Start date"}, "DATA_FINAL": {"rotulo": "End date"},
+        },
+    },
+    "feriados_mundo": {
+        "titulo": "Public holidays worldwide",
+        "resumo": "Public holidays for over 100 countries by year, with local name, English name and scope.",
+        "observacao": "Scope \"Regional\" means the holiday applies only to part of the country. Countries outside Nager.Date coverage return no data.",
+        "ponte": "For companies operating in several countries: flag non-working days per country and relate pais_iso2 to the Countries kit dimension.",
+        "visuais": ["Holidays by country", "Holiday list", "Holidays by month"],
+        "parametros": {
+            "PAISES": {"rotulo": "Countries", "ajuda": "2-letter codes separated by semicolons, such as US;AR;PT."},
+            "ANO_INICIAL": {"rotulo": "Start year"}, "ANO_FINAL": {"rotulo": "End year"},
+        },
+    },
+    "owid": {
+        "titulo": "Our World in Data",
+        "resumo": "Life expectancy, GDP per capita, CO₂ emissions, internet use and population for every country, year by year.",
+        "observacao": "Only countries (3-letter code) are kept; regions and aggregates such as \"World\" are dropped. Our World in Data charts are CC BY: credit the source in the report.",
+        "ponte": "Combine with the Countries kit, which works as a dimension through pais_iso3, and with World Bank indicators to compare Brazil with the rest of the world.",
+        "visuais": ["Country ranking in the latest year", "Average across countries by year", "Map by country"],
+        "parametros": {
+            "GRAFICO": {"rotulo": "Indicator", "opcoes": ["Life expectancy (years)", "GDP per capita (2021 PPP US$)",
+                                                         "CO₂ emissions per capita (t)", "Internet use (% of population)", "Population"]},
+            "ANO_INICIAL": {"rotulo": "Start year"},
+        },
+    },
+})
+
 from kits_ibge import KITS_EN as _IBGE_EN  # noqa: E402
 
 KITS["en"].update(_IBGE_EN)

@@ -31,7 +31,7 @@ A tela mostra o que foi entendido e por quê, e deixa incluir ou retirar kits an
 
 ### Kits Power BI
 
-25 kits de APIs que não exigem cadastro nem chave. Em cada kit a pessoa ajusta os parâmetros (período, cidade, moeda, produto, assunto) e recebe:
+30 kits de APIs que não exigem cadastro nem chave. Em cada kit a pessoa ajusta os parâmetros (período, cidade, moeda, produto, assunto) e recebe:
 
 - a consulta em **Power Query (M)**, com colunas nomeadas e tipadas, no formato `RelativePath` que o Power BI Service aceita na atualização agendada;
 - o mesmo resultado em **Python** (`requests` + `pandas`);
@@ -50,6 +50,8 @@ A tela mostra o que foi entendido e por quê, e deixa incluir ou retirar kits an
 | Política | Deputados federais | Câmara dos Deputados |
 | Internacional | Câmbio diário · Indicadores de países · Países · Terremotos no mundo | Frankfurter · Banco Mundial · USGS |
 | Clima | Previsão do tempo para até 16 dias | Open-Meteo |
+| Mercado financeiro | Expectativas de mercado (Focus) · Séries do Ipeadata · Criptomoedas em reais | Banco Central (Olinda) · Ipea · Mercado Bitcoin |
+| Mundo | Feriados no mundo · Our World in Data | Nager.Date · Our World in Data |
 | Conhecimento e pesquisa | Livros por assunto · Publicações científicas por assunto | Open Library · Crossref |
 
 Os kits por município usam o código IBGE do município (`municipio_id`) e se relacionam entre si por ele.
@@ -67,7 +69,7 @@ Junta vários kits em um projeto do Power BI (`.pbip`) pronto para abrir. A pess
 - um design por tema: cada página tem cabeçalho, cor de destaque e fundo próprios do tema do kit (economia, trabalho e renda, municípios, agronegócio, calendário e clima, internacional, conhecimento e pesquisa);
 - as consultas em `.pq`, os scripts em Python e as medidas em `.dax`, para reaproveitar em outro arquivo.
 
-Participam 23 dos 25 kits; ficam fora "Municípios do Brasil" e "Deputados federais", cujas colunas vêm direto da API, sem nomes fixos.
+Participam 28 dos 30 kits; ficam fora "Municípios do Brasil" e "Deputados federais", cujas colunas vêm direto da API, sem nomes fixos.
 
 ### Gerador Python
 
@@ -126,6 +128,7 @@ Algumas fontes não informam autenticação, HTTPS ou CORS; nesses cartões o ca
 ├── catalog_pt.json     Tradução de categorias e descrições para o português
 ├── catalog_en.json     Tradução para o inglês das descrições que vêm em português
 ├── kits.py             Kits Power BI, Gerador Python e as telas dessas abas
+├── kits_extra.py       Kits de Focus, Ipeadata, Mercado Bitcoin, Nager.Date e Our World in Data
 ├── kits_ibge.py        Kits do IBGE, gerados a partir da descrição de cada tabela do SIDRA
 ├── kits_i18n.py        Tradução dos kits para o inglês
 ├── pergunta.py         Pergunta → Projeto: lê a pergunta e escolhe kits, opções e período

@@ -14,6 +14,7 @@ import pandas as pd
 import streamlit as st
 
 import kits_i18n
+import kits_extra
 import kits_ibge
 from i18n import keyed, lang, number, t
 
@@ -917,6 +918,7 @@ df["citacoes"] = pd.to_numeric(df["citacoes"], errors="coerce").fillna(0).astype
 ]
 
 
+KITS.extend(kits_extra.KITS)
 KITS.extend(kits_ibge.KITS)
 
 
