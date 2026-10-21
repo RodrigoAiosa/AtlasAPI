@@ -39,6 +39,14 @@ ESQUEMAS = {
                ("ano_publicacao", "int64"), ("edicoes", "int64"), ("data", "date")],
     "crossref": [("doi", "string"), ("titulo", "string"), ("editora", "string"),
                  ("tipo", "string"), ("citacoes", "int64"), ("data", "date")],
+    "focus": [("data", "date"), ("indicador", "string"), ("ano_referencia", "int64"), ("media", "double"),
+              ("mediana", "double"), ("minimo", "double"), ("maximo", "double"), ("respondentes", "int64")],
+    "ipea": [("data", "date"), ("serie", "string"), ("valor", "double")],
+    "cripto": [("data", "date"), ("moeda", "string"), ("abertura", "double"), ("maxima", "double"),
+               ("minima", "double"), ("fechamento", "double"), ("volume", "double")],
+    "feriados_mundo": [("data", "date"), ("pais_iso2", "string"), ("feriado", "string"), ("feriado_local", "string"),
+                       ("abrangencia", "string"), ("tipo", "string")],
+    "owid": [("pais_iso3", "string"), ("pais", "string"), ("indicador", "string"), ("ano", "int64"), ("valor", "double")],
     "indicadores": [("pais_iso3", "string"), ("pais", "string"), ("indicador_id", "string"),
                     ("indicador", "string"), ("ano", "int64"), ("valor", "double")],
     "paises": [("pais_iso3", "string"), ("pais_iso2", "string"), ("pais", "string"), ("regiao", "string"),
@@ -50,7 +58,7 @@ ESQUEMAS = {
 TEXTO_IBGE = {"municipio", "uf", "uf_nome", "produto", "rebanho"}
 INTEIRO_IBGE = {"municipio_id", "uf_id", "ano", "trimestre", "populacao", "pib_mil_reais", "pib_milhoes_reais", "cabecas"}
 # Colunas numéricas que identificam ou localizam; somar não faz sentido.
-SEM_SOMA = {"municipio_id", "uf_id", "ano", "ano_publicacao", "trimestre", "latitude", "longitude", "tsunami", "relevancia"}
+SEM_SOMA = {"municipio_id", "uf_id", "ano", "ano_publicacao", "ano_referencia", "respondentes", "trimestre", "latitude", "longitude", "tsunami", "relevancia"}
 
 M_CALENDARIO = '''let
     Inicio = #date(1980, 1, 1),
@@ -234,8 +242,10 @@ def planejar(selecao: list[tuple[dict, dict]]) -> dict:
             relacionamentos.append((item["nome"], "municipio_id", "dCenso2022", "municipio_id"))
         if "uf_id" in colunas:
             relacionamentos.append((item["nome"], "uf_id", "dUF", "uf_id"))
-        if item["kit"]["id"] == "indicadores" and "paises" in ids:
+        if item["kit"]["id"] in {"indicadores", "owid"} and "paises" in ids:
             relacionamentos.append((item["nome"], "pais_iso3", "dPais", "pais_iso3"))
+        if item["kit"]["id"] == "feriados_mundo" and "paises" in ids:
+            relacionamentos.append((item["nome"], "pais_iso2", "dPais", "pais_iso2"))
 
     ligadas = {a for a, _, _, _ in relacionamentos} | {c for _, _, c, _ in relacionamentos}
     soltas = [i["nome"] for i in itens if i["nome"] not in ligadas]
@@ -331,6 +341,21 @@ VISUAIS = {
     "crossref": {"cartoes": ["Publicações", "Citações"],
                  "principais": [("linha", "Publicações por ano", _DATA, "Publicações"),
                                 ("colunas", "Citações por ano", _DATA, "Citações")]},
+    "focus": {"cartoes": ["Expectativa Mais Recente", "Respondentes"],
+              "principais": [("linha", "Mediana da expectativa por ano de referência", _DATA, "Expectativa (Mediana)",
+                              ("fExpectativa", "ano_referencia"))]},
+    "ipea": {"cartoes": ["Último Valor da Série"],
+             "principais": [("linha", "Série ao longo do tempo", _DATA, "Valor da Série")]},
+    "cripto": {"cartoes": ["Último Preço", "Variação no Período %"],
+               "principais": [("linha", "Preço de fechamento (R$)", _DATA, "Preço de Fechamento", ("fCripto", "moeda")),
+                              ("colunas", "Volume negociado por dia", _DATA, "Volume Negociado")]},
+    "feriados_mundo": {"cartoes": ["Feriados", "Feriados Nacionais"],
+                       "principais": [("barras", "Feriados por país", ("fFeriadoPais", "pais_iso2"), "Feriados"),
+                                      ("tabela", "Feriados no período", [("fFeriadoPais", "data"), ("fFeriadoPais", "pais_iso2"),
+                                                                          ("fFeriadoPais", "feriado")], [])]},
+    "owid": {"cartoes": ["Valor no Último Ano"],
+             "principais": [("barras", "Países no último ano", ("fIndicadorOWID", "pais"), "Valor no Último Ano"),
+                            ("linha", "Média dos países por ano", ("fIndicadorOWID", "ano"), "Valor do Indicador")]},
     "feriados": {"cartoes": ["Dias Úteis"],
                  "principais": [("tabela", "Feriados nacionais",
                                  [("dFeriado", "data"), ("dFeriado", "feriado"), ("dFeriado", "tipo")], [])]},
@@ -427,7 +452,8 @@ TEMA_DO_KIT = {
     "desemprego": "trabalho", "rendimento": "trabalho",
     "populacao": "municipios", "censo2022": "municipios", "pib_municipios": "municipios", "alfabetizacao": "municipios",
     "producao_agricola": "agro", "rebanhos": "agro",
-    "feriados": "calendario", "clima": "calendario", "previsao_clima": "calendario",
+    "feriados": "calendario", "clima": "calendario", "previsao_clima": "calendario", "feriados_mundo": "calendario",
+    "focus": "economia", "ipea": "economia", "cripto": "economia", "owid": "internacional",
     "cambio": "internacional", "indicadores": "internacional", "paises": "internacional", "terremotos": "internacional",
     "livros": "conhecimento", "crossref": "conhecimento",
 }
@@ -613,10 +639,10 @@ def _capa(plano: dict, resultado: list[tuple], total_paginas: int) -> dict:
     grupos: dict[str, list[str]] = {}
     for _, titulo_pagina, _, _, chave in resultado:
         grupos.setdefault(chave, []).append(titulo_pagina)
-    por_linha = min(len(grupos), 3) or 1
+    por_linha = (min(len(grupos), 3) if len(grupos) <= 6 else 4) or 1
     linhas = -(-len(grupos) // por_linha)
-    altura = 158 if linhas > 1 else 220
     vao = 20
+    altura = 220 if linhas == 1 else (650 - 310 - vao * (linhas - 1)) // linhas
     largura_cartao = (largura - vao * (por_linha - 1)) // por_linha
     for i, (chave, titulos) in enumerate(grupos.items()):
         tema = TEMAS[chave]

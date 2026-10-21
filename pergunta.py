@@ -40,7 +40,7 @@ PALAVRAS = {
                r"\bmoedas?\b", r"\bexchange rate", r"\bcurrenc", r"\bdollar"],
     "pib_trimestral": [r"\bcrescimento economico", r"\beconomia brasileira", r"\brecessao", r"\beconomic growth"],
     "desemprego": [r"\bdesempreg", r"\bdesocupac", r"\bmercado de trabalho", r"\bemprego\b", r"\bunemploy"],
-    "rendimento": [r"\brenda\b", r"\bsalari", r"\brendimento", r"\bremunerac", r"\bincome\b", r"\bwages?\b"],
+    "rendimento": [r"\brenda\b", r"\bsalari(?!o minimo)", r"\brendimento", r"\bremunerac", r"\bincome\b", r"\bwages?\b"],
     "populacao": [r"\bpopulac", r"\bhabitantes", r"\bdemograf", r"\bper capita", r"\bpopulation"],
     "censo2022": [r"\bcenso\b", r"\bdensidade", r"\bcensus\b", r"\bdensity"],
     "alfabetizacao": [r"\balfabetiz", r"\banalfabet", r"\bescolaridade", r"\bliteracy"],
@@ -54,6 +54,13 @@ PALAVRAS = {
     "clima": [r"\bclima", r"\bchuva", r"\bchove", r"\btemperatura", r"\bcalor\b", r"\bfrio\b", r"\bprecipitac",
               r"\bweather", r"\brain"],
     "terremotos": [r"\bterremoto", r"\bsismo", r"\babalos? sismic", r"\btremores? de terra", r"\bearthquake"],
+    "focus": [r"\bfocus\b", r"\bexpectativas? (?:de|do) mercado", r"\bprojec\w* (?:de|do) mercado",
+              r"\bprevis\w* (?:de|do) mercado", r"\bmarket expectations?", r"\bmarket forecasts?"],
+    "ipea": [r"\bipea", r"\bigp-?m\b", r"\bsalario minimo", r"\bminimum wage"],
+    "cripto": [r"\bcripto", r"\bbitcoin", r"\bbtc\b", r"\bethereum", r"\bsolana", r"\bcrypto"],
+    "feriados_mundo": [r"\bferiados? (?:no|do|pelo) mundo", r"\bholidays? (?:worldwide|around the world)"],
+    "owid": [r"\bexpectativa de vida", r"\blife expectancy", r"\bemiss\w* de (?:co2|carbono)", r"\bco2\b",
+             r"\bcarbono", r"\bcarbon", r"\binternet", r"\bour world in data"],
     "indicadores": [r"\bbanco mundial", r"\bworld bank", r"\bentre paises", r"\boutros paises", r"\bcountries"],
 }
 # "PIB" sozinho: nos municípios quando a pergunta fala de cidades ou estados, senão o PIB do Brasil.
@@ -80,6 +87,27 @@ OPCOES = {
         "São Paulo": [r"\bsao paulo"], "Rio de Janeiro": [r"\brio de janeiro", r"\bno rio\b"], "Brasília": [r"\bbrasilia"],
         "Belo Horizonte": [r"\bbelo horizonte", r"\bbh\b"], "Salvador": [r"\bsalvador"], "Fortaleza": [r"\bfortaleza"],
         "Recife": [r"\brecife"], "Manaus": [r"\bmanaus"], "Curitiba": [r"\bcuritiba"], "Porto Alegre": [r"\bporto alegre"],
+    },
+    ("focus", "INDICADOR"): {
+        "IGP-M": [r"\bigp-?m"], "IPCA": [r"\bipca\b", r"\binflac", r"\binflation"], "PIB Total": [r"\bpib\b", r"\bgdp\b"],
+        "Selic": [r"\bselic", r"\bjuros", r"\binterest"], "Câmbio": [r"\bdolar", r"\bcambi", r"\bdollar", r"\bexchange"],
+    },
+    ("ipea", "SERIE"): {
+        "Salário mínimo real (R$ do último mês)": [r"\bsalario minimo real", r"\breal minimum wage"],
+        "Salário mínimo vigente (R$)": [r"\bsalario minimo", r"\bminimum wage"],
+        "IGP-M (% ao mês)": [r"\bigp-?m"],
+    },
+    ("cripto", "MOEDA"): {
+        "Bitcoin (BTC)": [r"\bbitcoin", r"\bbtc\b"],
+        "Ethereum (ETH)": [r"\bethereum", r"\beth\b"], "Solana (SOL)": [r"\bsolana", r"\bsol\b"],
+        "XRP": [r"\bxrp\b", r"\bripple"], "Tether (USDT)": [r"\btether", r"\busdt\b"],
+    },
+    ("owid", "GRAFICO"): {
+        "Expectativa de vida (anos)": [r"\bexpectativa de vida", r"\blife expectancy"],
+        "Emissões de CO₂ per capita (t)": [r"\bco2\b", r"\bcarbon", r"\bemiss"],
+        "Uso de internet (% da população)": [r"\binternet"],
+        "PIB per capita (US$ PPC de 2021)": [r"\bpib per capita", r"\bgdp per capita"],
+        "População": [r"\bpopulac", r"\bpopulation"],
     },
     ("indicadores", "INDICADOR"): {"População total": [r"\bpopulac", r"\bpopulation"],
                                    "Inflação anual (%)": [r"\binflac", r"\binflation"]},
@@ -164,6 +192,10 @@ def interpretar(pergunta: str, hoje: dt.date | None = None) -> dict:
     if "pib_municipios" in motivos and re.search(r"\bper capita", normal):
         marcar("populacao", _achar([r"\bper capita"], normal, pergunta))
 
+    # "per capita" com um indicador mundial não pede a população dos municípios.
+    if "owid" in motivos and all("capita" in m.lower() for m in motivos.get("populacao", ["capita"])):
+        motivos.pop("populacao", None)
+
     # Opções: o produto, o rebanho ou a cidade citada também escolhe o kit.
     opcoes: dict[tuple[str, str], str] = {}
     for (kit_id, chave), rotulos in OPCOES.items():
@@ -180,7 +212,14 @@ def interpretar(pergunta: str, hoje: dt.date | None = None) -> dict:
     # Outros países: a comparação vai para os indicadores do Banco Mundial.
     paises = [codigo for codigo, padroes in PAISES.items() if _achar(padroes, normal, pergunta)]
     if paises:
-        marcar("indicadores", _achar([p for c in paises for p in PAISES[c]], normal, pergunta))
+        trecho_pais = _achar([p for c in paises for p in PAISES[c]], normal, pergunta)
+        if "feriados" in motivos:
+            # Feriados com outros países citados: vão para o kit mundial.
+            marcar("feriados_mundo", trecho_pais)
+            if not re.search(r"\bbrasil|\bbrazil", normal):
+                motivos.pop("feriados")
+        if not {"feriados_mundo", "owid"} & set(motivos):
+            marcar("indicadores", trecho_pais)
         for kit_id in ("pib_trimestral", "ipca", "populacao"):
             # Termos gerais (PIB, inflação, população) passam a valer para os países.
             if kit_id in motivos and not re.search(r"\bipca\b|\bmunicip|\bestado|\bufs?\b", normal):
