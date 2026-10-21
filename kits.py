@@ -69,7 +69,9 @@ PRODUCTX ( fIndicador, 1 + fIndicador[valor] / 100 ) - 1''',
     DataFinal = "«DATA_FINAL»",
     Fonte = Json.Document(Web.Contents("https://api.bcb.gov.br", [
         RelativePath = "dados/serie/bcdata.sgs." & Serie & "/dados",
-        Query = [formato = "json", dataInicial = DataInicial, dataFinal = DataFinal]
+        Query = [formato = "json", dataInicial = DataInicial, dataFinal = DataFinal],
+        // O Banco Central recusa pedidos sem identificação de navegador (devolve 404 em www.bcb.gov.br).
+        Headers = [#"User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36", Accept = "application/json"]
     ])),
     Tabela = Table.FromRecords(Fonte),
     ComData = Table.TransformColumnTypes(Tabela, {{"data", type date}}, "pt-BR"),
@@ -86,6 +88,8 @@ DATA_FINAL = "«DATA_FINAL»"
 resposta = requests.get(
     f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.{SERIE}/dados",
     params={"formato": "json", "dataInicial": DATA_INICIAL, "dataFinal": DATA_FINAL},
+    # O Banco Central recusa pedidos sem identificação de navegador.
+    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36", "Accept": "application/json"},
     timeout=30,
 )
 resposta.raise_for_status()

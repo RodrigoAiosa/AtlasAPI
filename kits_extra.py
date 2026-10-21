@@ -48,6 +48,8 @@ Respondentes = MAX ( fExpectativa[respondentes] )''',
     Campos = {"Indicador", "Data", "DataReferencia", "Media", "Mediana", "Minimo", "Maximo", "numeroRespondentes"},
     Fonte = Json.Document(Web.Contents("https://olinda.bcb.gov.br", [
         RelativePath = "olinda/servico/Expectativas/versao/v1/odata/ExpectativasMercadoAnuais",
+        // O Banco Central recusa pedidos sem identificação de navegador (devolve 404 em www.bcb.gov.br).
+        Headers = [#"User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36", Accept = "application/json"],
         Query = [
             #"$filter" = "Indicador eq '" & Indicador & "' and Data ge '" & DataInicial & "' and baseCalculo eq 0",
             #"$select" = Text.Combine(Campos, ","),
@@ -85,6 +87,8 @@ resposta = requests.get(
         "$top": 100000,
         "$format": "json",
     },
+    # O Banco Central recusa pedidos sem identificação de navegador.
+    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36", "Accept": "application/json"},
     timeout=60,
 )
 resposta.raise_for_status()
