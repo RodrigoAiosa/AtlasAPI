@@ -1,14 +1,21 @@
 # API Atlas
 
-Diretório de APIs públicas e gratuitas, com consultas prontas para Power BI. Feito em Python com Streamlit.
+Diretório de APIs públicas e gratuitas, com consultas prontas para Power BI. Feito em Python e publicado na Vercel.
 
 **Acesse:** https://atlasapi-delta.vercel.app/
 
 Em outubro de 2026 o catálogo reúne mais de 3.100 APIs em 56 categorias. Os números aparecem no topo do site e mudam sozinhos conforme as fontes são atualizadas.
 
-## O que o site oferece
+## Duas versões, o mesmo código
 
-O site tem cinco abas.
+| Versão | Onde roda | Abas |
+|---|---|---|
+| **Site publicado** (`index.html` + funções em `api/`) | Vercel, em https://atlasapi-delta.vercel.app/ | Catálogo de APIs · Kits Power BI · Montador de Projeto · Gerador Python |
+| **App Streamlit** (`app.py`) | Na sua máquina, com `streamlit run app.py` | As quatro acima e mais **Pergunta → Projeto** |
+
+As duas usam os mesmos módulos de lógica (`catalog.py`, `kits.py`, `kits_extra.py`, `kits_ibge.py`, `montador.py`, `i18n.py`); uma mudança nesses arquivos vale para as duas.
+
+## O que o site oferece
 
 ### Catálogo de APIs
 
@@ -18,7 +25,7 @@ O site tem cinco abas.
 - Resultados paginados de 24 em 24.
 - Script Python pronto, recolhido no próprio cartão, para os endereços que devolvem JSON direto e sem autenticação (fonte awesome-json-datasets).
 
-### Pergunta → Projeto
+### Pergunta → Projeto (só no app Streamlit)
 
 A pessoa escreve uma pergunta de negócio, como "Os estados com mais desemprego são os de menor renda? Como isso mudou desde 2020?", e recebe o projeto do Power BI montado para respondê-la:
 
@@ -46,15 +53,16 @@ A tela mostra o que foi entendido e por quê, e deixa incluir ou retirar kits an
 | Trabalho e renda | Taxa de desemprego por UF · Rendimento médio do trabalho | IBGE (SIDRA) |
 | Municípios | Municípios do Brasil · População por município · Censo 2022: população, área e densidade · PIB dos municípios · Taxa de alfabetização por município | IBGE |
 | Agronegócio | Produção agrícola por UF · Rebanhos por UF | IBGE (SIDRA) |
-| Calendário e clima | Feriados nacionais · Clima histórico | BrasilAPI · Open-Meteo |
+| Calendário e clima | Feriados nacionais · Clima histórico · Previsão do tempo para até 16 dias | BrasilAPI · Open-Meteo |
 | Política | Deputados federais | Câmara dos Deputados |
 | Internacional | Câmbio diário · Indicadores de países · Países · Terremotos no mundo | Frankfurter · Banco Mundial · USGS |
-| Clima | Previsão do tempo para até 16 dias | Open-Meteo |
 | Mercado financeiro | Expectativas de mercado (Focus) · Séries do Ipeadata · Criptomoedas em reais | Banco Central (Olinda) · Ipea · Mercado Bitcoin |
 | Mundo | Feriados no mundo · Our World in Data | Nager.Date · Our World in Data |
 | Conhecimento e pesquisa | Livros por assunto · Publicações científicas por assunto | Open Library · Crossref |
 
 Os kits por município usam o código IBGE do município (`municipio_id`) e se relacionam entre si por ele.
+
+As consultas ao Banco Central (kits Selic, IPCA e dólar e Expectativas de mercado) enviam um cabeçalho `User-Agent` de navegador. Sem ele, o Banco Central redireciona o Power Query para `http://www.bcb.gov.br/` e a consulta falha com erro 404.
 
 ### Montador de Projeto
 
@@ -62,11 +70,11 @@ Junta vários kits em um projeto do Power BI (`.pbip`) pronto para abrir. A pess
 
 - uma consulta em Power Query por tabela;
 - a tabela calendário (`dCalendario`) e as dimensões compartilhadas de municípios (`dCenso2022`) e de UFs (`dUF`), incluídas quando necessárias;
-- os relacionamentos entre as chaves em comum (`data`, `municipio_id`, `uf_id`, `pais_iso3`);
+- os relacionamentos entre as chaves em comum (`data`, `municipio_id`, `uf_id`, `pais_iso3`, `pais_iso2`); os indicadores de países, o Our World in Data e os feriados no mundo se ligam à dimensão `dPais` quando o kit Países está no projeto;
 - as medidas DAX de cada kit, inclusive as que só fazem sentido quando dois kits estão juntos, como PIB per capita, reunidas na tabela `Medidas` em pastas por tema e, dentro delas, subpastas por kit;
 - uma página de relatório por kit, com cartões, gráficos e tabelas iniciais, mais uma página de resumo;
 - uma capa com o título do projeto, os números do modelo, as páginas agrupadas por tema e as fontes dos dados;
-- um design por tema: cada página tem cabeçalho, cor de destaque e fundo próprios do tema do kit (economia, trabalho e renda, municípios, agronegócio, calendário e clima, internacional, conhecimento e pesquisa);
+- um design por tema: cada página tem cabeçalho, cor de destaque e fundo próprios do tema do kit (economia, trabalho e renda, municípios, agronegócio, calendário e clima, internacional, conhecimento e pesquisa); com mais de seis temas, a capa organiza os blocos em quatro por linha;
 - as consultas em `.pq`, os scripts em Python e as medidas em `.dax`, para reaproveitar em outro arquivo.
 
 Participam 28 dos 30 kits; ficam fora "Municípios do Brasil" e "Deputados federais", cujas colunas vêm direto da API, sem nomes fixos.
@@ -81,14 +89,14 @@ A interface está em português e em inglês, com seletor no topo. O idioma inic
 
 1. `?lang=pt` ou `?lang=en` na URL, útil para compartilhar o link já no idioma certo;
 2. idioma do navegador;
-3. país de acesso, pelo cabeçalho `CF-IPCountry` da Cloudflare (só existe se o app estiver atrás da Cloudflare);
+3. país de acesso, pelo cabeçalho de país do provedor (`X-Vercel-IP-Country` na Vercel, `CF-IPCountry` na Cloudflare);
 4. inglês.
 
 O que é traduzido:
 
 - **Interface:** todos os textos ficam em `i18n.py`.
 - **Catálogo:** categorias e descrições das APIs são traduzidas pelo `catalog_pt.json`, que usa o texto original como chave. APIs novas, ou com a descrição alterada na origem, aparecem em inglês até entrarem nesse arquivo. O `catalog_en.json` faz o caminho inverso para a fonte que vem em português.
-- **Kits:** o original fica em português (`kits.py` e `kits_ibge.py`) e a versão em inglês em `kits_i18n.py` e `kits_ibge.py`.
+- **Kits:** o original fica em português (`kits.py`, `kits_extra.py` e `kits_ibge.py`) e a versão em inglês em `kits_i18n.py` e `kits_ibge.py`.
 
 O código gerado pelos kits usa nomes de tabelas e colunas em português nos dois idiomas.
 
@@ -123,7 +131,12 @@ Algumas fontes não informam autenticação, HTTPS ou CORS; nesses cartões o ca
 ## Estrutura do projeto
 
 ```text
-├── app.py              Página: topo, abas, busca, categorias e cartões
+├── index.html          Site publicado na Vercel: página única que conversa com a pasta api/
+├── api/                Funções da Vercel: catálogo, configuração, código, prévia, projeto e script
+├── web_api.py          Ponte entre as funções da Vercel e os módulos de lógica
+├── vercel.json         Configuração das funções da Vercel
+├── pyproject.toml      Dependências das funções da Vercel
+├── app.py              App Streamlit: topo, abas, busca, categorias e cartões
 ├── catalog.py          Leitura e união das fontes do catálogo
 ├── catalog_pt.json     Tradução de categorias e descrições para o português
 ├── catalog_en.json     Tradução para o inglês das descrições que vêm em português
@@ -134,13 +147,15 @@ Algumas fontes não informam autenticação, HTTPS ou CORS; nesses cartões o ca
 ├── pergunta.py         Pergunta → Projeto: lê a pergunta e escolhe kits, opções e período
 ├── montador.py         Montador de Projeto: gera o projeto Power BI (.pbip) a partir dos kits
 ├── i18n.py             Textos da interface, seletor e detecção de idioma
-├── style.css           Visual do site
-├── requirements.txt    Dependências
+├── esconder_selo.py    App Streamlit: esconde os controles do Streamlit Cloud
+├── rolagem.py          App Streamlit: rola até a lista ao escolher uma categoria
+├── style.css           Visual do app Streamlit
+├── requirements.txt    Dependências do app Streamlit
 └── .streamlit/
     └── config.toml     Tema do Streamlit
 ```
 
-## Executar localmente
+## Executar o app Streamlit localmente
 
 Requer Python 3.10 ou mais novo.
 
@@ -164,17 +179,21 @@ streamlit run app.py
 
 O app precisa de internet para baixar o catálogo do GitHub e para a prévia dos kits.
 
-## Publicar no Streamlit Community Cloud
+## Publicação na Vercel
 
-1. Acesse https://share.streamlit.io/ e conecte sua conta do GitHub.
-2. Escolha este repositório e defina `app.py` como arquivo principal.
-3. Publique. A cada merge na `main`, o site se atualiza sozinho.
+O repositório está ligado à Vercel pelo GitHub:
+
+- **Merge na `main`:** a Vercel publica o site em produção automaticamente, em poucos minutos.
+- **Pull request:** a Vercel gera uma prévia com endereço próprio, sem mexer no site publicado; o link aparece no próprio PR.
+- O resultado de cada publicação aparece no GitHub, ao lado do commit (selo da Vercel).
+
+As funções ficam na pasta `api/`, com os limites de tempo definidos em `vercel.json` e as dependências em `pyproject.toml`. A página é o `index.html`.
 
 ## Como ampliar
 
 **Novo kit do IBGE.** Acrescente uma chamada a `_kit(...)` em `kits_ibge.py` com o caminho da consulta no SIDRA, o nível territorial (`municipio`, `uf` ou `brasil`), o tipo de período (`ano`, `mes` ou `trimestre`) e as medidas. O Power Query e o Python são gerados a partir disso. Inclua a tradução em `KITS_EN`, no mesmo arquivo.
 
-**Novo kit de outra API.** Acrescente um item à lista `KITS` em `kits.py`, com os modelos de código em M e em Python. Os parâmetros entram como marcadores no formato `«NOME»`.
+**Novo kit de outra API.** Acrescente um item à lista `KITS` em `kits_extra.py`, com os modelos de código em M e em Python. Os parâmetros entram como marcadores no formato `«NOME»`. Inclua a tradução em `kits_i18n.py`. Para o kit entrar no Montador, acrescente em `montador.py` o esquema das colunas (`ESQUEMAS`), os visuais (`VISUAIS`) e o tema (`TEMA_DO_KIT`); para a aba Pergunta → Projeto, as palavras-chave em `pergunta.py`.
 
 **Nova fonte do catálogo.** Acrescente um item a `EXTRAS` em `catalog.py`. Se o formato for diferente dos existentes, escreva um leitor e registre-o em `PARSERS`.
 
@@ -182,17 +201,17 @@ O app precisa de internet para baixar o catálogo do GitHub e para a prévia dos
 
 ## Créditos
 
-O catálogo existe graças ao trabalho das comunidades que mantêm as fontes listadas em "Fontes do catálogo". Os dados dos kits vêm de IBGE, Banco Central do Brasil, Câmara dos Deputados, BrasilAPI, Open-Meteo, Frankfurter, Banco Mundial e USGS.
+O catálogo existe graças ao trabalho das comunidades que mantêm as fontes listadas em "Fontes do catálogo". Os dados dos kits vêm de IBGE, Banco Central do Brasil, Ipea, Câmara dos Deputados, BrasilAPI, Open-Meteo, Frankfurter, Banco Mundial, USGS, Mercado Bitcoin, Nager.Date, Our World in Data (licença CC BY), Open Library e Crossref.
 
 
 ## API HTTP (Vercel)
 
-Além do app Streamlit, este repositório contém uma API HTTP serverless na pasta `api/`, publicada pela Vercel. Ela expõe o catálogo, a configuração dos kits Power BI, a geração de consultas e scripts, a prévia dos dados e a montagem de projetos. Os endpoints não exigem autenticação.
+O site publicado usa uma API HTTP serverless na pasta `api/`, publicada pela Vercel. Ela expõe o catálogo, a configuração dos kits Power BI, a geração de consultas e scripts, a prévia dos dados e a montagem de projetos. Os endpoints não exigem autenticação.
 
-Defina `BASE_URL` como o domínio atribuído ao deployment da Vercel, sem a barra final. Por exemplo:
+Defina `BASE_URL` como o domínio do site, sem a barra final:
 
 ```bash
-export BASE_URL="https://seu-deployment.vercel.app"
+export BASE_URL="https://atlasapi-delta.vercel.app"
 ```
 
 Os exemplos abaixo usam `curl` e pressupõem que o deployment está ativo. Para chamadas `POST`, envie JSON com `Content-Type: application/json`. Os campos `lang` aceitam `pt` ou `en`; quando omitidos, é usada a configuração padrão da aplicação. O corpo das requisições tem limite de 200 KB.
@@ -312,4 +331,4 @@ Campos: `url` (URL do endpoint), `caminho` (caminho opcional até a lista/objeto
 
 ### Cache e implantação
 
-`/api/config` e `/api/catalogo` usam cache na borda para respostas com idioma explícito; o catálogo tem cache de borda de 30 minutos e a configuração, de 24 horas. A configuração com `lang=auto` não é armazenada em cache compartilhado. Respostas de geração e downloads não são armazenados em cache. Para publicar ou atualizar os endpoints, conecte o repositório à Vercel e faça o deploy do projeto; a configuração de funções está em `vercel.json` e as dependências Python da API em `pyproject.toml`.
+`/api/config` e `/api/catalogo` usam cache na borda para respostas com idioma explícito; o catálogo tem cache de borda de 30 minutos e a configuração, de 24 horas. A configuração com `lang=auto` não é armazenada em cache compartilhado. Respostas de geração e downloads não são armazenados em cache. Os endpoints são atualizados a cada merge na `main` (veja "Publicação na Vercel").
