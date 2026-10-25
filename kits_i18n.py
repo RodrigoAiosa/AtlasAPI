@@ -260,6 +260,41 @@ KITS["en"].update({
                                                          "CO₂ emissions per capita (t)", "Internet use (% of population)", "Population"]},
             "ANO_INICIAL": {"rotulo": "Start year"},
         },
+        "worldbank": {
+            "titulo": "Global indicators — World Bank",
+            "fonte": "World Bank Indicators API v2",
+            "resumo": "Annual country-level series: GDP, population, inflation, unemployment, energy and development.",
+            "observacao": "The API is free and requires no key. Some indicators have missing country-year values; handle nulls in the model.",
+            "ponte": "Relate pais_iso3 to a country dimension and compare economic, social and environmental indicators across countries and years.",
+            "visuais": ["Country ranking in the latest available year", "Indicator trend by country", "Country map"],
+            "parametros": {
+                "INDICADOR": {"rotulo": "Indicator", "opcoes": ["GDP (current US$)", "Total population", "Annual inflation (%)", "Unemployment (% of labor force)", "CO₂ emissions (kt)"]},
+                "ANO_INICIAL": {"rotulo": "Start year"}, "ANO_FINAL": {"rotulo": "End year"},
+            },
+        },
+        "wikimedia": {
+            "titulo": "Article pageviews — Wikimedia",
+            "fonte": "Wikimedia REST API",
+            "resumo": "Daily history of Wikipedia pageviews to analyze interest in a topic.",
+            "observacao": "Project, access type and agent are set to en.wikipedia, all-access and user. Respect published Wikimedia limits.",
+            "ponte": "Compare pageview spikes with campaigns, launches or events and rank pages by period.",
+            "visuais": ["Daily pageview line chart", "7-day moving average", "Percentage change from previous day"],
+            "parametros": {
+                "ARTIGO": {"rotulo": "Article"},
+                "DATA_INICIAL": {"rotulo": "Start date"}, "DATA_FINAL": {"rotulo": "End date"},
+            },
+        },
+        "qualidade_ar": {
+            "titulo": "Air quality — Open-Meteo",
+            "fonte": "Open-Meteo Air Quality API",
+            "resumo": "Hourly forecast of PM2.5/PM10 particulate matter, ozone and nitrogen dioxide.",
+            "observacao": "The endpoint provides a forecast, not long-term historical data. Concentrations use the API's documented units.",
+            "ponte": "Compare air quality across cities and hours and relate forecasts to calendar, weather or public-health data.",
+            "visuais": ["Hourly PM2.5 and PM10 series", "Pollutant comparison", "Map by city"],
+            "parametros": {
+                "CIDADE": {"rotulo": "City"}, "LATITUDE": {"rotulo": "Latitude"}, "LONGITUDE": {"rotulo": "Longitude"},
+            },
+        },
     },
 })
 
