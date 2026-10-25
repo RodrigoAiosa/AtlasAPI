@@ -58,6 +58,12 @@ EXTRAS = (
         "urls": ("https://api.apis.guru/v2/list.json",),
         "dedupe_host": False,
     },
+    {
+        "name": "apidirectory.dev (registro OpenAPI)",
+        "format": "api_directory",
+        "urls": ("https://apidirectory.dev/apis.json",),
+        "dedupe_host": False,
+    },
 )
 
 # Seções dos READMEs que não são categorias de APIs.
@@ -440,9 +446,15 @@ def merge(primary: list[dict], extras: list[tuple], primary_name: str = "public-
         remember(row)
 
     categories = {row["category"].casefold(): row["category"] for row in merged}
+    # Limite para manter a resposta leve; as fontes curadas têm prioridade.
+    max_catalog_apis = 10000
     for source, rows, *options in extras:
+        if len(merged) >= max_catalog_apis:
+            break
         by_host = options[0] if options else True
         for row in rows:
+            if len(merged) >= max_catalog_apis:
+                break
             host = _host(row["url"]) if row["url"] else ""
             if (
                 BLOCKED.search(f'{row["name"]} {row["description"]}')
@@ -459,6 +471,71 @@ def merge(primary: list[dict], extras: list[tuple], primary_name: str = "public-
     return merged
 
 
+
+API_DIRECTORY_CATEGORIES = {
+    "AI": "Machine Learning", "PAY": "Finance", "WX": "Weather",
+    "FIN": "Finance", "DEV": "Development", "GEO": "Geocoding",
+    "MSG": "Communication", "DB": "Development", "IDN": "Authentication & Authorization",
+    "MEDIA": "Media", "SHOP": "Shopping", "SOC": "Social", "TRV": "Transportation",
+    "SCI": "Science & Math", "FUN": "Entertainment", "MED": "Health",
+    "NEWS": "News", "SEC": "Security",
+}
+
+
+def parse_api_directory(content: str) -> list[dict]:
+    """Lê registros do API Directory; ignora metadados e evita contar versões como APIs extras."""
+    data = json.loads(content)
+    rows: list[dict] = []
+    seen_objects: set[int] = set()
+    url_keys = ("url", "docs", "documentation", "homepage", "website", "link",
+                "spec_url", "openapi_url", "openapi", "definition", "api_url")
+    name_keys = ("name", "title", "api", "display_name")
+    category_keys = ("category", "cat", "group")
+    auth_keys = ("auth", "authentication", "auth_scheme", "auth_type")
+
+    def visit(node, depth: int = 0) -> None:
+        if len(rows) >= 15000 or depth > 8:
+            return
+        if isinstance(node, list):
+            for item in node:
+                visit(item, depth + 1)
+                if len(rows) >= 15000:
+                    break
+            return
+        if not isinstance(node, dict) or id(node) in seen_objects:
+            return
+        seen_objects.add(id(node))
+        lowered = {str(k).casefold(): v for k, v in node.items()}
+        name = next((lowered[k] for k in name_keys if isinstance(lowered.get(k), str) and lowered[k].strip()), "")
+        url = next((lowered[k] for k in url_keys if isinstance(lowered.get(k), str)
+                    and lowered[k].strip().startswith(("https://", "http://"))), "")
+        description = next((lowered[k] for k in ("description", "summary", "about")
+                            if isinstance(lowered.get(k), str) and lowered[k].strip()), "")
+        category_raw = next((lowered[k] for k in category_keys if isinstance(lowered.get(k), str)), "")
+        # Só aceita registros com nome, link de documentação e descrição; evita contar versões internas.
+        if name and url and description and not any(k in lowered for k in ("meta", "metrics")):
+            category = API_DIRECTORY_CATEGORIES.get(category_raw.upper(), clean_cell(category_raw) or "Development")
+            auth_raw = str(next((lowered[k] for k in auth_keys if lowered.get(k) is not None), "")).casefold()
+            auth = "No" if auth_raw in {"none", "no", "no auth", "no authentication"} else (
+                "Yes" if auth_raw and auth_raw not in {"unknown", "varies"} else "Unknown"
+            )
+            cors_raw = str(lowered.get("cors", "Unknown")).casefold()
+            cors = "Yes" if cors_raw in {"yes", "true"} else ("No" if cors_raw in {"no", "false"} else "Unknown")
+            rows.append({
+                "name": clean_cell(name),
+                "description": clean_cell(description),
+                "auth": auth,
+                "https": "Yes" if urlsplit(url).scheme == "https" else "No",
+                "cors": cors,
+                "url": url.strip(),
+                "category": category,
+            })
+            return
+        for value in node.values():
+            visit(value, depth + 1)
+            if len(rows) >= 15000:
+                break
+
 PARSERS = {
     "readme": parse_readme,
     "json": parse_json,
@@ -468,6 +545,7 @@ PARSERS = {
     "json_datasets": parse_json_datasets,
     "awesome_rest": parse_awesome_rest,
     "openapi_directory": parse_openapi_directory,
+    "api_directory": parse_api_directory,
 }
 
 
