@@ -275,10 +275,28 @@ footer nav a:hover { color: var(--purple); }
   .stats { gap: 1.4rem; }
 }
 @media (max-width: 700px) { .search kbd { display: none; } .search-hint { margin-top: -2.4rem; } }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .featured, .toast { transition: none; } .skeleton, .spinner { animation: none; } }
+/* Acessibilidade: link para saltar a navegação usando apenas o teclado. */
+.skip-link {
+  position: fixed; top: .75rem; left: .75rem; z-index: 100;
+  transform: translateY(-160%); padding: .7rem 1rem; border-radius: 9px;
+  background: var(--ink); color: #fff; font-weight: 700; text-decoration: none;
+  box-shadow: 0 8px 24px rgba(23,26,46,.2);
+}
+.skip-link:focus { transform: translateY(0); }
+#conteudo-principal:focus { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
 </style>
 </head>
 <body>
+<a class="skip-link" href="#conteudo-principal" data-t="ux_skip_content"></a>
 <div class="wrap">
   <div class="top">
     <label class="lang"><span class="sr" data-t="lang_label">Idioma</span>
@@ -300,6 +318,7 @@ footer nav a:hover { color: var(--purple); }
     <button class="tab" role="tab" id="t-python" aria-controls="p-python" data-tab="python" data-t="tab_python"></button>
   </nav>
 
+  <main id="conteudo-principal" tabindex="-1">
   <!-- ═══ CATÁLOGO ═══ -->
   <section class="panel" id="p-catalogo" role="tabpanel" aria-labelledby="t-catalogo">
     <div class="search">
@@ -389,6 +408,7 @@ footer nav a:hover { color: var(--purple); }
     </div>
     <div id="genOut"></div>
   </section>
+  </main>
 
   <footer>
     <div><strong>API Atlas</strong><span data-t="footer_tag"></span></div>
