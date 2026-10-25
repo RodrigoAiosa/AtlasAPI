@@ -409,4 +409,215 @@ df = df[df["ano"] >= ANO_INICIAL]
 df["indicador"] = INDICADOR
 df = df[["pais_iso3", "pais", "indicador", "ano", "valor"]].reset_index(drop=True)''',
     },
+
+    {
+        "id": "worldbank",
+        "icone": "🌍",
+        "titulo": "Indicadores globais — Banco Mundial",
+        "fonte": "World Bank Indicators API v2",
+        "docs": "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation",
+        "resumo": "Séries anuais por país: PIB, população, inflação, desemprego, energia e desenvolvimento.",
+        "papel": "Fato",
+        "tabela": "fIndicadorGlobal",
+        "colunas": "pais_iso3, pais, indicador, ano, valor",
+        "parametros": [
+            {"chave": "INDICADOR", "rotulo": "Indicador", "tipo": "opcoes", "opcoes": {
+                "PIB (US$ corrente)": "NY.GDP.MKTP.CD",
+                "População total": "SP.POP.TOTL",
+                "Inflação anual (%)": "FP.CPI.TOTL.ZG",
+                "Desemprego (% da força de trabalho)": "SL.UEM.TOTL.ZS",
+                "Emissões de CO₂ (kt)": "EN.ATM.CO2E.KT"}},
+            {"chave": "ANO_INICIAL", "rotulo": "Ano inicial", "tipo": "numero", "padrao": "2015"},
+            {"chave": "ANO_FINAL", "rotulo": "Ano final", "tipo": "numero", "padrao": "2024"},
+        ],
+        "observacao": "A API é gratuita e não exige chave. Alguns indicadores têm anos ou países sem valor; esses registros devem ser tratados como nulos.",
+        "ponte": "Relacione pais_iso3 com a dimensão de países e compare indicadores econômicos, sociais e ambientais entre países e ao longo dos anos.",
+        "visuais": ["Ranking de países no último ano disponível", "Evolução do indicador por país", "Mapa por país"],
+        "dax": '''Valor do Indicador = AVERAGE ( fIndicadorGlobal[valor] )
+
+Valor no Último Ano =
+VAR UltimoAno = MAX ( fIndicadorGlobal[ano] )
+RETURN
+    CALCULATE ( [Valor do Indicador], fIndicadorGlobal[ano] = UltimoAno )
+
+Países com Dados = DISTINCTCOUNT ( fIndicadorGlobal[pais_iso3] )''',
+        "m": '''let
+    Indicador = "«INDICADOR»",
+    AnoInicial = "«ANO_INICIAL»",
+    AnoFinal = "«ANO_FINAL»",
+    Fonte = Json.Document(Web.Contents("https://api.worldbank.org", [
+        RelativePath = "v2/country/all/indicator/" & Indicador,
+        Query = [format = "json", per_page = "20000", date = AnoInicial & ":" & AnoFinal]
+    ])),
+    Dados = Table.FromRecords(Fonte{1}),
+    PaisExpandido = Table.ExpandRecordColumn(Dados, "country", {"value"}, {"pais"}),
+    Selecionadas = Table.SelectColumns(PaisExpandido, {"countryiso3code", "pais", "date", "value"}),
+    Renomeadas = Table.RenameColumns(Selecionadas, {{"countryiso3code", "pais_iso3"}, {"date", "ano"}, {"value", "valor"}}),
+    ComIndicador = Table.AddColumn(Renomeadas, "indicador", each Indicador, type text),
+    Tipos = Table.TransformColumnTypes(ComIndicador, {{"pais_iso3", type text}, {"pais", type text}, {"ano", Int64.Type}, {"valor", type number}}, "en-US"),
+    Resultado = Table.SelectRows(Tipos, each [pais_iso3] <> null and [pais_iso3] <> "")
+in
+    Resultado''',
+        "python": '''import requests
+import pandas as pd
+
+INDICADOR = "«INDICADOR»"
+ANO_INICIAL = «ANO_INICIAL»
+ANO_FINAL = «ANO_FINAL»
+
+resposta = requests.get(
+    f"https://api.worldbank.org/v2/country/all/indicator/{INDICADOR}",
+    params={"format": "json", "per_page": 20000, "date": f"{ANO_INICIAL}:{ANO_FINAL}"},
+    timeout=60,
+)
+resposta.raise_for_status()
+payload = resposta.json()
+registros = payload[1] if len(payload) > 1 and payload[1] else []
+
+df = pd.DataFrame([{
+    "pais_iso3": item.get("countryiso3code"),
+    "pais": (item.get("country") or {}).get("value"),
+    "indicador": INDICADOR,
+    "ano": pd.to_numeric(item.get("date"), errors="coerce"),
+    "valor": pd.to_numeric(item.get("value"), errors="coerce"),
+} for item in registros])
+df = df.dropna(subset=["pais_iso3", "ano"]).reset_index(drop=True)''',
+    },
+    {
+        "id": "wikimedia",
+        "icone": "📈",
+        "titulo": "Visualizações de artigos — Wikimedia",
+        "fonte": "Wikimedia REST API",
+        "docs": "https://www.mediawiki.org/wiki/Wikimedia_REST_API",
+        "resumo": "Histórico diário de visualizações de páginas da Wikipédia para analisar interesse por assunto.",
+        "papel": "Fato",
+        "tabela": "fVisualizacoesWiki",
+        "colunas": "data, artigo, visualizacoes",
+        "parametros": [
+            {"chave": "ARTIGO", "rotulo": "Artigo", "tipo": "texto", "padrao": "Artificial_intelligence",
+             "ajuda": "Nome da página em inglês, com espaços substituídos por sublinhados."},
+            {"chave": "DATA_INICIAL", "rotulo": "Data inicial", "tipo": "texto", "padrao": "20250101",
+             "padrao_re": r"\\d{8}", "ajuda": "Formato AAAAMMDD."},
+            {"chave": "DATA_FINAL", "rotulo": "Data final", "tipo": "texto", "padrao": "20251231",
+             "padrao_re": r"\\d{8}", "ajuda": "Formato AAAAMMDD."},
+        ],
+        "observacao": "O projeto, o tipo de acesso e o agente são fixados como en.wikipedia, all-access e user. Respeite os limites publicados pela Wikimedia.",
+        "ponte": "Compare picos de visualizações com campanhas, lançamentos ou eventos e crie rankings de páginas por período.",
+        "visuais": ["Linha diária de visualizações", "Média móvel de 7 dias", "Variação percentual contra o dia anterior"],
+        "dax": '''Visualizações = SUM ( fVisualizacoesWiki[visualizacoes] )
+
+Média Diária = AVERAGE ( fVisualizacoesWiki[visualizacoes] )
+
+Visualizações Dia Anterior =
+CALCULATE ( [Visualizações], DATEADD ( dCalendario[Data], -1, DAY ) )''',
+        "m": '''let
+    Artigo = Uri.EscapeDataString("«ARTIGO»"),
+    DataInicial = "«DATA_INICIAL»",
+    DataFinal = "«DATA_FINAL»",
+    Fonte = Json.Document(Web.Contents("https://wikimedia.org", [
+        RelativePath = "api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/" & Artigo & "/daily/" & DataInicial & "/" & DataFinal,
+        Headers = [Accept = "application/json", #"User-Agent" = "API-Atlas-PowerBI/1.0"]
+    ])),
+    Dados = Table.FromRecords(Fonte[items]),
+    Selecionadas = Table.SelectColumns(Dados, {"timestamp", "article", "views"}),
+    ComData = Table.AddColumn(Selecionadas, "data", each Date.FromText(Text.Start(Text.From([timestamp]), 8)), type date),
+    Renomeadas = Table.RenameColumns(ComData, {{"article", "artigo"}, {"views", "visualizacoes"}}),
+    Resultado = Table.TransformColumnTypes(Table.SelectColumns(Renomeadas, {"data", "artigo", "visualizacoes"}), {{"artigo", type text}, {"visualizacoes", Int64.Type}})
+in
+    Resultado''',
+        "python": '''import requests
+import pandas as pd
+from urllib.parse import quote
+
+ARTIGO = "«ARTIGO»"
+DATA_INICIAL = "«DATA_INICIAL»"
+DATA_FINAL = "«DATA_FINAL»"
+
+url = (
+    "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/"
+    f"en.wikipedia/all-access/user/{quote(ARTIGO, safe='')}/daily/{DATA_INICIAL}/{DATA_FINAL}"
+)
+resposta = requests.get(url, headers={
+    "Accept": "application/json",
+    "User-Agent": "API-Atlas-PowerBI/1.0 (public analytics example)",
+}, timeout=45)
+resposta.raise_for_status()
+
+df = pd.DataFrame(resposta.json().get("items", []))
+if not df.empty:
+    df["data"] = pd.to_datetime(df["timestamp"].str[:8], format="%Y%m%d")
+    df = df.rename(columns={"article": "artigo", "views": "visualizacoes"})
+    df = df[["data", "artigo", "visualizacoes"]].reset_index(drop=True)''',
+    },
+    {
+        "id": "qualidade_ar",
+        "icone": "🌫️",
+        "titulo": "Qualidade do ar — Open-Meteo",
+        "fonte": "Open-Meteo Air Quality API",
+        "docs": "https://open-meteo.com/en/docs/air-quality-api",
+        "resumo": "Previsão horária de material particulado PM2.5/PM10, ozônio e dióxido de nitrogênio.",
+        "papel": "Fato",
+        "tabela": "fQualidadeAr",
+        "colunas": "data_hora, cidade, latitude, longitude, pm2_5, pm10, nitrogen_dioxide, ozone",
+        "parametros": [
+            {"chave": "CIDADE", "rotulo": "Cidade", "tipo": "texto", "padrao": "São Paulo"},
+            {"chave": "LATITUDE", "rotulo": "Latitude", "tipo": "texto", "padrao": "-23.55", "padrao_re": r"-?\\d+(\\.\\d+)?"},
+            {"chave": "LONGITUDE", "rotulo": "Longitude", "tipo": "texto", "padrao": "-46.63", "padrao_re": r"-?\\d+(\\.\\d+)?"},
+        ],
+        "observacao": "O endpoint fornece previsão, não histórico de longo prazo. Concentrações são apresentadas nas unidades documentadas pela API.",
+        "ponte": "Compare a qualidade do ar entre cidades e horários e relacione a previsão com calendário, clima ou dados de saúde pública.",
+        "visuais": ["Série horária de PM2.5 e PM10", "Comparação de poluentes", "Mapa por cidade"],
+        "dax": '''PM2.5 Médio = AVERAGE ( fQualidadeAr[pm2_5] )
+
+PM10 Médio = AVERAGE ( fQualidadeAr[pm10] )
+
+Máximo de PM2.5 = MAX ( fQualidadeAr[pm2_5] )''',
+        "m": '''let
+    Cidade = "«CIDADE»",
+    Latitude = "«LATITUDE»",
+    Longitude = "«LONGITUDE»",
+    Fonte = Json.Document(Web.Contents("https://air-quality-api.open-meteo.com", [
+        RelativePath = "v1/air-quality",
+        Query = [latitude = Latitude, longitude = Longitude,
+                 hourly = "pm2_5,pm10,nitrogen_dioxide,ozone",
+                 forecast_days = "5", timezone = "auto"]
+    ])),
+    Horas = Fonte[hourly],
+    Tabela = Table.FromColumns(
+        {Horas[time], Horas[pm2_5], Horas[pm10], Horas[nitrogen_dioxide], Horas[ozone]},
+        {"data_hora", "pm2_5", "pm10", "nitrogen_dioxide", "ozone"}
+    ),
+    ComCidade = Table.AddColumn(Tabela, "cidade", each Cidade, type text),
+    ComLatitude = Table.AddColumn(ComCidade, "latitude", each Number.FromText(Latitude, "en-US"), type number),
+    ComLongitude = Table.AddColumn(ComLatitude, "longitude", each Number.FromText(Longitude, "en-US"), type number),
+    Tipos = Table.TransformColumnTypes(ComLongitude, {{"data_hora", type datetime}, {"pm2_5", type number}, {"pm10", type number}, {"nitrogen_dioxide", type number}, {"ozone", type number}})
+in
+    Tipos''',
+        "python": '''import requests
+import pandas as pd
+
+CIDADE = "«CIDADE»"
+LATITUDE = float("«LATITUDE»")
+LONGITUDE = float("«LONGITUDE»")
+
+resposta = requests.get(
+    "https://air-quality-api.open-meteo.com/v1/air-quality",
+    params={
+        "latitude": LATITUDE, "longitude": LONGITUDE,
+        "hourly": "pm2_5,pm10,nitrogen_dioxide,ozone",
+        "forecast_days": 5, "timezone": "auto",
+    },
+    timeout=45,
+)
+resposta.raise_for_status()
+horas = resposta.json().get("hourly", {})
+df = pd.DataFrame(horas)
+df = df.rename(columns={"time": "data_hora"})
+df["data_hora"] = pd.to_datetime(df["data_hora"], errors="coerce")
+df["cidade"] = CIDADE
+df["latitude"] = LATITUDE
+df["longitude"] = LONGITUDE
+df = df[["data_hora", "cidade", "latitude", "longitude", "pm2_5", "pm10", "nitrogen_dioxide", "ozone"]]''',
+    },
+
 ]
