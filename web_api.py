@@ -91,6 +91,24 @@ def _parametro(kit: dict, parametro: dict) -> dict:
     return saida
 
 
+# Ordem dos temas nas listas agrupadas da página (lei de Hick: menos opções de cada vez).
+ORDEM_TEMAS = ("economia", "trabalho", "municipios", "agro", "calendario", "internacional", "conhecimento", "politica")
+# Kits fora do Montador também precisam de um tema para entrar nos grupos.
+TEMA_FORA_DO_MONTADOR = {"municipios": "municipios", "deputados": "politica"}
+NOME_POLITICA = {"pt": "Política", "en": "Politics"}
+
+
+def _tema(kit_id: str) -> str:
+    return montador.TEMA_DO_KIT.get(kit_id) or TEMA_FORA_DO_MONTADOR.get(kit_id, "internacional")
+
+
+def _nome_tema(chave: str, idioma: str) -> str:
+    if chave == "politica":
+        return NOME_POLITICA.get(idioma, NOME_POLITICA["en"])
+    tema = montador.TEMAS[chave]
+    return tema.get(idioma, tema["en"])
+
+
 def configuracao(idioma: str) -> dict:
     usar_idioma(idioma)
     montaveis = {kit["id"] for kit in montador.montaveis()}
@@ -105,6 +123,7 @@ def configuracao(idioma: str) -> dict:
             "dax": kits.tr(kit, "dax") or "",
             "parametros": [_parametro(kit, p) for p in kit["parametros"]],
             "montavel": kit["id"] in montaveis,
+            "tema": _tema(kit["id"]),
         })
     return {
         "lang": st.session_state["lang"],
@@ -114,6 +133,8 @@ def configuracao(idioma: str) -> dict:
                        "categoria": i18n.category(d["category"]),
                        "descricao": i18n.featured_description(d["name"], d["description"])} for d in DESTAQUES],
         "kits": lista,
+        "temas": [{"id": chave, "nome": _nome_tema(chave, st.session_state["lang"])}
+                  for chave in ORDEM_TEMAS if any(k["tema"] == chave for k in lista)],
         "bdg": kits.BI_DATA_GENERATOR_URL,
         "padrao_montador": [i for i in ("populacao", "pib_municipios", "ipca") if i in montaveis],
     }
