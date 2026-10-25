@@ -54,6 +54,10 @@ ESQUEMAS = {
     "terremotos": [("id", "string"), ("data_hora", "datetime"), ("magnitude", "double"), ("local", "string"),
                    ("latitude", "double"), ("longitude", "double"), ("profundidade_km", "double"),
                    ("tsunami", "int64"), ("relevancia", "int64"), ("url", "string")],
+    "worldbank": [("pais_iso3", "string"), ("pais", "string"), ("indicador", "string"), ("ano", "int64"), ("valor", "double")],
+    "wikimedia": [("data", "date"), ("artigo", "string"), ("visualizacoes", "int64")],
+    "qualidade_ar": [("data_hora", "datetime"), ("cidade", "string"), ("latitude", "double"), ("longitude", "double"),
+                     ("pm2_5", "double"), ("pm10", "double"), ("nitrogen_dioxide", "double"), ("ozone", "double")],
 }
 TEXTO_IBGE = {"municipio", "uf", "uf_nome", "produto", "rebanho"}
 INTEIRO_IBGE = {"municipio_id", "uf_id", "ano", "trimestre", "populacao", "pib_mil_reais", "pib_milhoes_reais", "cabecas"}
