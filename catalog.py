@@ -536,6 +536,10 @@ def parse_api_directory(content: str) -> list[dict]:
             if len(rows) >= 15000:
                 break
 
+    visit(data)
+    return rows
+
+
 PARSERS = {
     "readme": parse_readme,
     "json": parse_json,
