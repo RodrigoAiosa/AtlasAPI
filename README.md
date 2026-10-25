@@ -38,7 +38,7 @@ A tela mostra o que foi entendido e por quê, e deixa incluir ou retirar kits an
 
 ### Kits Power BI
 
-30 kits de APIs que não exigem cadastro nem chave. Em cada kit a pessoa ajusta os parâmetros (período, cidade, moeda, produto, assunto) e recebe:
+33 kits de APIs que não exigem cadastro nem chave. Em cada kit a pessoa ajusta os parâmetros (período, cidade, moeda, produto, assunto) e recebe:
 
 - a consulta em **Power Query (M)**, com colunas nomeadas e tipadas, no formato `RelativePath` que o Power BI Service aceita na atualização agendada;
 - o mesmo resultado em **Python** (`requests` + `pandas`);
@@ -53,12 +53,12 @@ A tela mostra o que foi entendido e por quê, e deixa incluir ou retirar kits an
 | Trabalho e renda | Taxa de desemprego por UF · Rendimento médio do trabalho | IBGE (SIDRA) |
 | Municípios | Municípios do Brasil · População por município · Censo 2022: população, área e densidade · PIB dos municípios · Taxa de alfabetização por município | IBGE |
 | Agronegócio | Produção agrícola por UF · Rebanhos por UF | IBGE (SIDRA) |
-| Calendário e clima | Feriados nacionais · Clima histórico · Previsão do tempo para até 16 dias | BrasilAPI · Open-Meteo |
+| Calendário e clima | Feriados nacionais · Clima histórico · Previsão do tempo para até 16 dias · Qualidade do ar | BrasilAPI · Open-Meteo |
 | Política | Deputados federais | Câmara dos Deputados |
-| Internacional | Câmbio diário · Indicadores de países · Países · Terremotos no mundo | Frankfurter · Banco Mundial · USGS |
+| Internacional | Câmbio diário · Indicadores de países · Países · Terremotos no mundo · Indicadores globais por país | Frankfurter · Banco Mundial · USGS |
 | Mercado financeiro | Expectativas de mercado (Focus) · Séries do Ipeadata · Criptomoedas em reais | Banco Central (Olinda) · Ipea · Mercado Bitcoin |
 | Mundo | Feriados no mundo · Our World in Data | Nager.Date · Our World in Data |
-| Conhecimento e pesquisa | Livros por assunto · Publicações científicas por assunto | Open Library · Crossref |
+| Conhecimento e pesquisa | Livros por assunto · Publicações científicas por assunto · Visualizações de artigos da Wikipédia | Open Library · Crossref · Wikimedia |
 
 Os kits por município usam o código IBGE do município (`municipio_id`) e se relacionam entre si por ele.
 
