@@ -18,7 +18,7 @@ import kits_extra
 import kits_ibge
 from i18n import keyed, lang, number, t
 
-BI_DATA_GENERATOR_URL = "https://ai-bidatagenerator.streamlit.app/"
+BI_DATA_GENERATOR_URL = "https://bi-data-generator.vercel.app/"
 
 CAPITAIS = {
     "São Paulo": {"CIDADE": "São Paulo", "LATITUDE": "-23.55", "LONGITUDE": "-46.63"},

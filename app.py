@@ -48,6 +48,12 @@ def load_apis() -> tuple[pd.DataFrame, list[str]]:
     rows, failed = catalog.load()
     return pd.DataFrame(rows, columns=catalog.COLUMNS), failed
 
+
+@st.cache_data(ttl=21600, show_spinner=False, max_entries=256)
+def search_external_apis(query: str) -> tuple[list[dict], int]:
+    """Federated APIs.io search, cached to limit external requests."""
+    return catalog.search_apisio(query, limit=24)
+
 def slug(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.casefold()).strip("-")
 
@@ -194,11 +200,34 @@ with tab_catalog:
         searchable["category_local"] = searchable["category"].map(i18n.category)
         mask = searchable.apply(lambda col: col.str.casefold().str.contains(re.escape(query), na=False)).any(axis=1)
         results = apis[mask].copy()
+        external_rows, external_total, external_error = [], 0, False
+        if len(query) >= 3 and st.button(t("apisio_button"), key=f"apisio_search_{query[:80]}"):
+            try:
+                external_rows, external_total = search_external_apis(query)
+                st.session_state["apisio_last_query"] = query
+                st.session_state["apisio_last_result"] = (external_rows, external_total)
+            except Exception:
+                external_error = True
+        if st.session_state.get("apisio_last_query") == query:
+            external_rows, external_total = st.session_state.get("apisio_last_result", ([], 0))
         st.markdown(f'<div class="section-heading"><h2>{t("results_title")}</h2><span>{t("results_count_one") if len(results) == 1 else t("results_count", n=i18n.number(len(results)))}</span></div>', unsafe_allow_html=True)
         if results.empty:
-            st.markdown(f'<div class="empty-state"><div class="empty-icon">⌕</div><h3>{t("empty_title")}</h3><p>{t("empty_text")}</p></div>', unsafe_allow_html=True)
+            if external_rows:
+                st.caption(t("apisio_local_empty"))
+            else:
+                st.markdown(f'<div class="empty-state"><div class="empty-icon">⌕</div><h3>{t("empty_title")}</h3><p>{t("empty_text")}</p></div>', unsafe_allow_html=True)
         else:
             render_grid(results, f"search:{query}")
+        if external_rows:
+            st.markdown(
+                f'<div class="section-heading"><h2>{t("apisio_title")}</h2>'
+                f'<span>{t("apisio_count", shown=i18n.number(len(external_rows)), total=i18n.number(external_total))}</span></div>',
+                unsafe_allow_html=True,
+            )
+            st.caption(t("apisio_note"))
+            render_grid(pd.DataFrame(external_rows, columns=catalog.COLUMNS), f"apisio:{query}")
+        elif external_error:
+            st.caption(t("apisio_unavailable"))
     else:
         st.markdown(f'<div class="section-heading"><h2>{t("featured_title")}</h2><span>{t("featured_sub")}</span></div>', unsafe_allow_html=True)
         featured_cols = st.columns(3, gap="medium")

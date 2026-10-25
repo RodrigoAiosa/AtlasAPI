@@ -58,6 +58,13 @@ ESQUEMAS = {
     "wikimedia": [("data", "date"), ("artigo", "string"), ("visualizacoes", "int64")],
     "qualidade_ar": [("data_hora", "datetime"), ("cidade", "string"), ("latitude", "double"), ("longitude", "double"),
                      ("pm2_5", "double"), ("pm10", "double"), ("nitrogen_dioxide", "double"), ("ozone", "double")],
+    "cervejarias": [("cervejaria_id", "string"), ("nome", "string"), ("tipo", "string"), ("cidade", "string"),
+                    ("regiao", "string"), ("pais", "string"), ("latitude", "double"), ("longitude", "double"),
+                    ("site", "string")],
+    "repositorios_github": [("repositorio_id", "int64"), ("nome", "string"), ("nome_completo", "string"),
+                            ("descricao", "string"), ("linguagem", "string"), ("estrelas", "int64"),
+                            ("forks", "int64"), ("issues_abertas", "int64"), ("data", "date"),
+                            ("ultima_atualizacao", "date"), ("url", "string")],
 }
 TEXTO_IBGE = {"municipio", "uf", "uf_nome", "produto", "rebanho"}
 INTEIRO_IBGE = {"municipio_id", "uf_id", "ano", "trimestre", "populacao", "pib_mil_reais", "pib_milhoes_reais", "cabecas"}
@@ -394,6 +401,15 @@ VISUAIS = {
                "principais": [("barras", "Países por região", ("dPais", "regiao"), "Países")]},
     "terremotos": {"cartoes": ["Terremotos", "Maior Magnitude"],
                    "principais": [("tabela", "Maiores terremotos", [("fTerremoto", "local"), ("fTerremoto", "data_hora")], ["Maior Magnitude"])]},
+    "cervejarias": {"cartoes": ["Cervejarias", "Cidades com Cervejarias"],
+                    "principais": [("barras", "Cervejarias por tipo", ("dCervejaria", "tipo"), "Cervejarias"),
+                                   ("tabela", "Diretório de cervejarias", [("dCervejaria", "nome"),
+                                                                            ("dCervejaria", "cidade"),
+                                                                            ("dCervejaria", "regiao")], [])]},
+    "repositorios_github": {"cartoes": ["Repositórios", "Estrelas", "Forks"],
+                            "principais": [("colunas", "Estrelas por data de criação", _DATA, "Estrelas"),
+                                           ("barras", "Repositórios por linguagem",
+                                            ("fRepositorioGitHub", "linguagem"), "Repositórios")]},
 }
 _TIPOS = {"linha": "lineChart", "barras": "clusteredBarChart", "colunas": "clusteredColumnChart"}
 LARGURA, ALTURA, MARGEM = 1280, 720, 20
@@ -459,7 +475,8 @@ TEMA_DO_KIT = {
     "feriados": "calendario", "clima": "calendario", "previsao_clima": "calendario", "feriados_mundo": "calendario",
     "focus": "economia", "ipea": "economia", "cripto": "economia", "owid": "internacional",
     "cambio": "internacional", "indicadores": "internacional", "paises": "internacional", "terremotos": "internacional",
-    "livros": "conhecimento", "crossref": "conhecimento",
+    "livros": "conhecimento", "crossref": "conhecimento", "repositorios_github": "conhecimento",
+    "cervejarias": "internacional",
 }
 _TEXTO, _TEXTO_SUAVE, _LINHA, _BRANCO = "#111827", "#6B7280", "#E5E7EB", "#FFFFFF"
 _FONTE = "Segoe UI"

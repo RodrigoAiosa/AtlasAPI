@@ -123,6 +123,54 @@ def fetch(urls) -> str:
     raise CatalogError("err_load", str(last_error))
 
 
+def search_apisio(query: str, limit: int = 24) -> tuple[list[dict], int]:
+    """Busca resultados no APIs.io sob demanda, sem importar o roster completo."""
+    query = str(query).strip()
+    if len(query) < 2:
+        return [], 0
+    response = requests.get(
+        "https://apis.io/api/v1/search",
+        params={"q": query[:120], "limit": max(1, min(int(limit), 25))},
+        timeout=15,
+        headers={"User-Agent": "AtlasAPI/1.0 (https://github.com/RodrigoAiosa/AtlasAPI)"},
+    )
+    response.raise_for_status()
+    payload = response.json()
+    section = payload.get("apis") or {}
+    rows = []
+    for item in section.get("top", []):
+        if not isinstance(item, dict):
+            continue
+        name = clean_cell(item.get("name", ""))
+        provider = clean_cell(item.get("provider_name", ""))
+        provider_slug = str(item.get("provider_slug", "")).strip()
+        slug = str(item.get("slug", "")).strip()
+        api_url = str(item.get("humanURL") or item.get("baseURL") or "").strip()
+        if not api_url.startswith(("https://", "http://")) and provider_slug and slug:
+            api_url = f"https://apis.io/apis/{provider_slug}/{slug}/"
+        if not name or not api_url.startswith(("https://", "http://")):
+            continue
+        access = item.get("access_model") or {}
+        public = access.get("public") if isinstance(access, dict) else None
+        auth = "No" if public is True else ("Yes" if public is False else "Unknown")
+        tags = item.get("tags") or []
+        category = clean_cell(tags[0]) if tags and isinstance(tags[0], str) else "Development"
+        description = clean_cell(item.get("description", ""))
+        if provider:
+            description = f"{description} · Provider: {provider}" if description else f"Provider: {provider}"
+        rows.append({
+            "name": name,
+            "description": description,
+            "auth": auth,
+            "https": "Yes" if urlsplit(api_url).scheme == "https" else "No",
+            "cors": "Unknown",
+            "url": api_url,
+            "category": category,
+            "source": "APIs.io · busca externa",
+        })
+    return rows, int(section.get("total") or 0)
+
+
 def parse_readme(content: str) -> list[dict]:
     """Lê as tabelas de categorias (API | Description | Auth | HTTPS | CORS) de um README."""
     rows: list[dict] = []

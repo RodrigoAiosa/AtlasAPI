@@ -616,8 +616,154 @@ df = df.rename(columns={"time": "data_hora"})
 df["data_hora"] = pd.to_datetime(df["data_hora"], errors="coerce")
 df["cidade"] = CIDADE
 df["latitude"] = LATITUDE
-df["longitude"] = LONGITUDE
-df = df[["data_hora", "cidade", "latitude", "longitude", "pm2_5", "pm10", "nitrogen_dioxide", "ozone"]]''',
+        df["longitude"] = LONGITUDE
+        df = df[["data_hora", "cidade", "latitude", "longitude", "pm2_5", "pm10", "nitrogen_dioxide", "ozone"]]''',
+    },
+    {
+        "id": "cervejarias",
+        "icone": "🍺",
+        "titulo": "Cervejarias por país",
+        "fonte": "Open Brewery DB",
+        "docs": "https://www.openbrewerydb.org/documentation",
+        "resumo": "Diretório público de cervejarias, brewpubs e cidrarias com tipo, cidade, região e coordenadas.",
+        "papel": "Dimensão",
+        "tabela": "dCervejaria",
+        "colunas": "cervejaria_id, nome, tipo, cidade, regiao, pais, latitude, longitude, site",
+        "parametros": [
+            {"chave": "PAIS", "rotulo": "País", "tipo": "opcoes", "opcoes": {
+                "Estados Unidos": "United States", "Brasil": "Brazil", "Alemanha": "Germany",
+                "Reino Unido": "United Kingdom", "Canadá": "Canada"}},
+            {"chave": "LIMITE", "rotulo": "Registros por página", "tipo": "opcoes", "opcoes": {
+                "50": "50", "100": "100", "200": "200"}},
+            {"chave": "PAGINA", "rotulo": "Página", "tipo": "opcoes", "opcoes": {
+                "1": "1", "2": "2", "3": "3"}},
+        ],
+        "observacao": "A base é mais abrangente nos Estados Unidos; países com menor cobertura podem retornar poucas linhas. A API não exige chave.",
+        "ponte": "Use cidade, região e coordenadas para explorar distribuição geográfica e compare tipos de estabelecimento por localidade.",
+        "visuais": ["Cervejarias por tipo", "Tabela por cidade e região", "Mapa usando latitude e longitude"],
+        "dax": '''Cervejarias = DISTINCTCOUNT ( dCervejaria[cervejaria_id] )
+
+Cidades com Cervejarias = DISTINCTCOUNT ( dCervejaria[cidade] )''',
+        "m": '''let
+    Pais = "«PAIS»",
+    Limite = "«LIMITE»",
+    Pagina = "«PAGINA»",
+    Fonte = Json.Document(Web.Contents("https://api.openbrewerydb.org", [
+        RelativePath = "v1/breweries",
+        Query = [by_country = Pais, per_page = Limite, page = Pagina]
+    ])),
+    Campos = {"id", "name", "brewery_type", "city", "state", "country", "latitude", "longitude", "website_url"},
+    Tabela = Table.FromRecords(Fonte, Campos, MissingField.UseNull),
+    Renomeada = Table.RenameColumns(Tabela, {
+        {"id", "cervejaria_id"}, {"name", "nome"}, {"brewery_type", "tipo"},
+        {"city", "cidade"}, {"state", "regiao"}, {"country", "pais"}, {"website_url", "site"}
+    }),
+    Tipos = Table.TransformColumnTypes(Renomeada, {
+        {"cervejaria_id", type text}, {"nome", type text}, {"tipo", type text},
+        {"cidade", type text}, {"regiao", type text}, {"pais", type text},
+        {"latitude", type number}, {"longitude", type number}, {"site", type text}
+    })
+in
+    Tipos''',
+        "python": '''import requests
+import pandas as pd
+
+PAIS = "«PAIS»"
+LIMITE = int("«LIMITE»")
+PAGINA = int("«PAGINA»")
+
+resposta = requests.get(
+    "https://api.openbrewerydb.org/v1/breweries",
+    params={"by_country": PAIS, "per_page": LIMITE, "page": PAGINA},
+    timeout=30,
+)
+resposta.raise_for_status()
+
+df = pd.DataFrame(resposta.json()).rename(columns={
+    "id": "cervejaria_id", "name": "nome", "brewery_type": "tipo",
+    "city": "cidade", "state": "regiao", "country": "pais", "website_url": "site",
+})
+colunas = ["cervejaria_id", "nome", "tipo", "cidade", "regiao", "pais", "latitude", "longitude", "site"]
+df = df.reindex(columns=colunas)
+df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
+df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")''',
+    },
+    {
+        "id": "repositorios_github",
+        "icone": "🐙",
+        "titulo": "Repositórios públicos do GitHub",
+        "fonte": "GitHub REST API — Search repositories",
+        "docs": "https://docs.github.com/en/rest/search/search#search-repositories",
+        "resumo": "Pesquisa projetos públicos por termo e compara linguagem, estrelas, forks, issues e datas de criação.",
+        "papel": "Fato",
+        "tabela": "fRepositorioGitHub",
+        "colunas": "repositorio_id, nome, nome_completo, descricao, linguagem, estrelas, forks, issues_abertas, data, ultima_atualizacao, url",
+        "parametros": [
+            {"chave": "CONSULTA", "rotulo": "Termo de pesquisa", "tipo": "texto", "padrao": "powerbi", "padrao_re": r"[A-Za-z0-9 .:+_-]{2,80}"},
+            {"chave": "ORDENAR", "rotulo": "Ordenar por", "tipo": "opcoes", "opcoes": {
+                "Estrelas": "stars", "Atualização": "updated", "Forks": "forks"}},
+        ],
+        "observacao": "A busca pública sem token tem limite menor (10 chamadas por minuto para Search). O endpoint retorna até 100 itens por página; prefira atualização agendada espaçada.",
+        "ponte": "Acompanhe popularidade e atividade de projetos por linguagem e data de criação. A pesquisa do GitHub aceita termos como ‘powerbi’ ou ‘topic:power-bi’.",
+        "visuais": ["Repositórios por linguagem", "Estrelas por data de criação", "Tabela de projetos mais populares"],
+        "dax": '''Repositórios = DISTINCTCOUNT ( fRepositorioGitHub[repositorio_id] )
+
+Estrelas = SUM ( fRepositorioGitHub[estrelas] )
+
+Forks = SUM ( fRepositorioGitHub[forks] )''',
+        "m": '''let
+    Consulta = "«CONSULTA»",
+    Ordenar = "«ORDENAR»",
+    Fonte = Json.Document(Web.Contents("https://api.github.com", [
+        RelativePath = "search/repositories",
+        Headers = [Accept = "application/vnd.github+json", #"X-GitHub-Api-Version" = "2022-11-28",
+                   #"User-Agent" = "AtlasAPI-PowerBI"],
+        Query = [q = Consulta, sort = Ordenar, order = "desc", per_page = "100"]
+    ])),
+    Campos = {"id", "name", "full_name", "description", "language", "stargazers_count", "forks_count",
+              "open_issues_count", "created_at", "updated_at", "html_url"},
+    Tabela = Table.FromRecords(Fonte[items], Campos, MissingField.UseNull),
+    Renomeada = Table.RenameColumns(Tabela, {
+        {"id", "repositorio_id"}, {"name", "nome"}, {"full_name", "nome_completo"},
+        {"description", "descricao"}, {"language", "linguagem"}, {"stargazers_count", "estrelas"},
+        {"forks_count", "forks"}, {"open_issues_count", "issues_abertas"},
+        {"created_at", "data_original"}, {"updated_at", "atualizacao_original"}, {"html_url", "url"}
+    }),
+    ComData = Table.AddColumn(Renomeada, "data", each try Date.From(DateTimeZone.From([data_original])) otherwise null, type date),
+    ComAtualizacao = Table.AddColumn(ComData, "ultima_atualizacao", each try Date.From(DateTimeZone.From([atualizacao_original])) otherwise null, type date),
+    Resultado = Table.SelectColumns(ComAtualizacao, {"repositorio_id", "nome", "nome_completo", "descricao",
+        "linguagem", "estrelas", "forks", "issues_abertas", "data", "ultima_atualizacao", "url"}),
+    Tipos = Table.TransformColumnTypes(Resultado, {
+        {"repositorio_id", Int64.Type}, {"nome", type text}, {"nome_completo", type text},
+        {"descricao", type text}, {"linguagem", type text}, {"estrelas", Int64.Type},
+        {"forks", Int64.Type}, {"issues_abertas", Int64.Type}, {"url", type text}
+    })
+in
+    Tipos''',
+        "python": '''import requests
+import pandas as pd
+
+CONSULTA = "«CONSULTA»"
+ORDENAR = "«ORDENAR»"
+resposta = requests.get(
+    "https://api.github.com/search/repositories",
+    params={"q": CONSULTA, "sort": ORDENAR, "order": "desc", "per_page": 100},
+    headers={"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28",
+             "User-Agent": "AtlasAPI-PowerBI"},
+    timeout=30,
+)
+resposta.raise_for_status()
+df = pd.DataFrame(resposta.json().get("items", [])).rename(columns={
+    "id": "repositorio_id", "name": "nome", "full_name": "nome_completo", "description": "descricao",
+    "language": "linguagem", "stargazers_count": "estrelas", "forks_count": "forks",
+    "open_issues_count": "issues_abertas", "created_at": "data", "updated_at": "ultima_atualizacao",
+    "html_url": "url",
+})
+colunas = ["repositorio_id", "nome", "nome_completo", "descricao", "linguagem", "estrelas", "forks",
+           "issues_abertas", "data", "ultima_atualizacao", "url"]
+df = df.reindex(columns=colunas)
+for coluna in ["data", "ultima_atualizacao"]:
+    df[coluna] = pd.to_datetime(df[coluna], utc=True, errors="coerce").dt.date''',
     },
 
 ]

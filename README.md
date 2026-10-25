@@ -4,7 +4,7 @@ Diretório de APIs públicas e gratuitas, com consultas prontas para Power BI. F
 
 **Acesse:** https://atlasapi-delta.vercel.app/
 
-O catálogo combina fontes públicas de APIs e especificações OpenAPI, com meta de até 10.000 registros únicos após deduplicação. O total real aparece no topo do site e varia conforme a disponibilidade e a atualização das fontes.
+O catálogo local combina fontes públicas de APIs e especificações OpenAPI, com meta de até 10.000 registros únicos após deduplicação. O total real aparece no topo do site e varia conforme a disponibilidade e a atualização das fontes. A busca opcional do APIs.io consulta resultados externos sem copiar o roster inteiro; esses resultados não entram no contador local.
 
 ## Duas versões, o mesmo código
 
@@ -23,6 +23,7 @@ As duas usam os mesmos módulos de lógica (`catalog.py`, `kits.py`, `kits_extra
 - Navegação por categoria, com a quantidade de APIs em cada uma.
 - Cartões em grade com descrição, autenticação, HTTPS, CORS e link para a documentação.
 - Resultados paginados de 24 em 24.
+- Busca opcional sob demanda no diretório APIs.io, exibida separadamente; o catálogo local não replica seu roster completo nem infla o contador. Os registros externos podem corresponder a APIs pagas, autenticadas ou apenas a especificações.
 - Script Python pronto, recolhido no próprio cartão, para os endereços que devolvem JSON direto e sem autenticação (fonte awesome-json-datasets).
 
 ### Pergunta → Projeto (só no app Streamlit)
@@ -38,13 +39,13 @@ A tela mostra o que foi entendido e por quê, e deixa incluir ou retirar kits an
 
 ### Kits Power BI
 
-33 kits de APIs que não exigem cadastro nem chave. Em cada kit a pessoa ajusta os parâmetros (período, cidade, moeda, produto, assunto) e recebe:
+35 kits de APIs; a maioria não exige cadastro nem chave. Os kits com limites específicos os explicam junto aos parâmetros. Em cada kit a pessoa ajusta os parâmetros (período, cidade, moeda, produto, assunto) e recebe:
 
 - a consulta em **Power Query (M)**, com colunas nomeadas e tipadas, no formato `RelativePath` que o Power BI Service aceita na atualização agendada;
 - o mesmo resultado em **Python** (`requests` + `pandas`);
 - uma **prévia dos dados**, com download em CSV;
 - o papel da tabela no modelo (fato ou dimensão), ideias de visuais e medidas DAX iniciais;
-- como combinar os dados com uma base criada no [BI Data Generator](https://ai-bidatagenerator.streamlit.app/).
+- como combinar os dados com uma base criada no [BI Data Generator](https://bi-data-generator.vercel.app/).
 
 | Tema | Kits | Fonte |
 |---|---|---|
@@ -59,6 +60,7 @@ A tela mostra o que foi entendido e por quê, e deixa incluir ou retirar kits an
 | Mercado financeiro | Expectativas de mercado (Focus) · Séries do Ipeadata · Criptomoedas em reais | Banco Central (Olinda) · Ipea · Mercado Bitcoin |
 | Mundo | Feriados no mundo · Our World in Data | Nager.Date · Our World in Data |
 | Conhecimento e pesquisa | Livros por assunto · Publicações científicas por assunto · Visualizações de artigos da Wikipédia | Open Library · Crossref · Wikimedia |
+| Diretórios e tecnologia | Cervejarias por país · Repositórios públicos do GitHub | Open Brewery DB · GitHub REST API |
 
 Os kits por município usam o código IBGE do município (`municipio_id`) e se relacionam entre si por ele.
 

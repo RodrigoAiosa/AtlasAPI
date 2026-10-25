@@ -260,7 +260,8 @@ KITS["en"].update({
                                                          "CO₂ emissions per capita (t)", "Internet use (% of population)", "Population"]},
             "ANO_INICIAL": {"rotulo": "Start year"},
         },
-        "worldbank": {
+    },
+    "worldbank": {
             "titulo": "Global indicators — World Bank",
             "fonte": "World Bank Indicators API v2",
             "resumo": "Annual country-level series: GDP, population, inflation, unemployment, energy and development.",
@@ -295,7 +296,31 @@ KITS["en"].update({
                 "CIDADE": {"rotulo": "City"}, "LATITUDE": {"rotulo": "Latitude"}, "LONGITUDE": {"rotulo": "Longitude"},
             },
         },
-    },
+        "cervejarias": {
+            "titulo": "Breweries by country",
+            "fonte": "Open Brewery DB",
+            "resumo": "Public directory of breweries, brewpubs and cideries with type, city, region and coordinates.",
+            "observacao": "Coverage is strongest in the United States; countries with less coverage may return few rows. No API key is required.",
+            "ponte": "Use city, region and coordinates to explore geographic distribution and compare establishment types by location.",
+            "visuais": ["Breweries by type", "Table by city and region", "Map using latitude and longitude"],
+            "parametros": {
+                "PAIS": {"rotulo": "Country", "opcoes": ["United States", "Brazil", "Germany", "United Kingdom", "Canada"]},
+                "LIMITE": {"rotulo": "Rows per page", "opcoes": ["50", "100", "200"]},
+                "PAGINA": {"rotulo": "Page", "opcoes": ["1", "2", "3"]},
+            },
+        },
+        "repositorios_github": {
+            "titulo": "Public GitHub repositories",
+            "fonte": "GitHub REST API — Search repositories",
+            "resumo": "Search public projects by term and compare language, stars, forks, issues and creation dates.",
+            "observacao": "Unauthenticated public search has a lower limit (10 Search requests per minute). The endpoint returns up to 100 items per page; use spaced refresh schedules.",
+            "ponte": "Track project popularity and activity by language and creation date. GitHub search accepts terms such as ‘powerbi’ or ‘topic:power-bi’.",
+            "visuais": ["Repositories by language", "Stars by creation date", "Table of most popular projects"],
+            "parametros": {
+                "CONSULTA": {"rotulo": "Search term", "ajuda": "Use 2 to 80 letters, numbers or spaces."},
+                "ORDENAR": {"rotulo": "Sort by", "opcoes": ["Stars", "Updated", "Forks"]},
+            },
+        },
 })
 
 from kits_ibge import KITS_EN as _IBGE_EN  # noqa: E402

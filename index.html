@@ -427,6 +427,7 @@ const POR_PAGINA = 24;
 const S = {
   lang: "pt", cfg: null, textos: {}, apis: null, catErro: null,
   busca: "", categoria: null, limite: POR_PAGINA,
+  apisio: null,
   kit: null, valores: {}, sub: "m", previaKey: null, todasCats: false,
   mont: { ids: [], valores: {}, titulo: null },
 };
@@ -573,6 +574,22 @@ function cartaoApi(a) {
     <div class="pills">${badge("Auth", a.a)}${badge("HTTPS", a.h)}${badge("CORS", a.o)}</div>${script}</article>`;
 }
 
+async function buscarExterna(query) {
+  const chave = fold(query.trim());
+  if (chave.length < 3) return;
+  S.apisio = { query: chave, apis: [], total: 0, loading: true, error: false };
+  desenharCatalogo();
+  try {
+    const { dados } = await api(`/api/busca?q=${encodeURIComponent(query.trim())}`);
+    if (fold(S.busca.trim()) !== chave) return;
+    S.apisio = { query: chave, apis: dados.apis || [], total: Number(dados.total || 0), loading: false, error: !!dados.erro };
+  } catch {
+    if (fold(S.busca.trim()) !== chave) return;
+    S.apisio = { query: chave, apis: [], total: 0, loading: false, error: true };
+  }
+  desenharCatalogo();
+}
+
 function grade(lista) {
   const ordenada = [...lista].sort((x, y) => x.n.localeCompare(y.n, undefined, { sensitivity: "base" }));
   let html = `<div class="grid3">${ordenada.slice(0, S.limite).map(cartaoApi).join("")}</div>`;
@@ -594,6 +611,16 @@ function desenharCatalogo() {
       &nbsp;<button class="chip" id="limparBusca">✕ ${esc(t("ux_clear_search"))}</button></span></div>`;
     html += achadas.length ? grade(achadas)
       : `<div class="empty"><div class="big">⌕</div><h3>${esc(t("empty_title"))}</h3><p>${esc(t("empty_text"))}</p></div>`;
+    if (q.length >= 3) {
+      const externa = S.apisio?.query === q ? S.apisio : null;
+      html += `<div class="heading" style="margin-top:2rem"><h2>${esc(t("apisio_title"))}</h2><span>${externa && !externa.loading && !externa.error ? esc(t("apisio_count", { shown: num(externa.apis.length), total: num(externa.total) })) : ""}</span></div>`;
+      if (!externa) html += `<button class="btn-soft" id="buscarExterno">${esc(t("apisio_button"))}</button>`;
+      else if (externa.loading) html += `<p class="note">${esc(t("apisio_loading"))}</p>`;
+      else if (externa.error) html += `<p class="note">${esc(t("apisio_unavailable"))}</p>`;
+      else if (externa.apis.length) {
+        html += `<p class="note">${esc(t("apisio_note"))}</p><div class="grid3">${externa.apis.map(cartaoApi).join("")}</div>`;
+      } else html += `<p class="note">${esc(t("apisio_none"))}</p>`;
+    }
     alvo.innerHTML = html; return;
   }
   html += `<div class="heading"><h2>${esc(t("featured_title"))}</h2><span>${esc(t("featured_sub"))}</span></div><div class="grid3">`;
@@ -630,6 +657,7 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape" && document.activeElement === $("#busca") && S.busca) { limparBusca(); }
 });
 $("#catConteudo").addEventListener("click", e => {
+  if (e.target.closest("#buscarExterno")) { buscarExterna(S.busca.trim()); return; }
   const cat = e.target.closest("[data-cat]");
   if (cat) {
     S.categoria = cat.dataset.cat; S.limite = POR_PAGINA; desenharCatalogo();

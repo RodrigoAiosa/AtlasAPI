@@ -4,6 +4,7 @@
   "buildCommand": "",
   "functions": {
     "api/catalogo.py": { "maxDuration": 60 },
+    "api/busca.py": { "maxDuration": 20 },
     "api/previa.py": { "maxDuration": 120 }
   }
 }

@@ -1,4 +1,4 @@
-"""GET /api/catalogo?lang=pt|en: catálogo completo, unido das sete fontes do GitHub."""
+"""GET /api/catalogo?lang=pt|en: catálogo local deduplicado das fontes públicas configuradas."""
 import os
 import sys
 
