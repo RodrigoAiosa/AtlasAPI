@@ -1,0 +1,63 @@
+name: Validar API Atlas
+
+on:
+  push:
+    branches: ["main", "feature/catalogo-10k-kits-powerbi"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Instalar dependências
+        run: python -m pip install -r requirements.txt
+      - name: Verificar sintaxe Python
+        run: python -m compileall -q .
+      - name: Validar catálogo e kits do Power BI
+        run: |
+          python - <<'PY'
+          import catalog
+          import kits
+          import montador
+
+          ids = [kit["id"] for kit in kits.KITS]
+          assert len(ids) == len(set(ids)), "Existem IDs de kits duplicados"
+          montaveis = {kit["id"] for kit in montador.montaveis()}
+          esperados = {"worldbank", "wikimedia", "qualidade_ar"}
+          assert esperados <= set(ids), f"Kits ausentes: {esperados - set(ids)}"
+          assert esperados <= montaveis, f"Kits não montáveis: {esperados - montaveis}"
+
+          amostra = {
+              "apis": [{
+                  "name": "Example Public API",
+                  "cat": "SCI",
+                  "auth": "none",
+                  "cors": "yes",
+                  "docs": "https://example.org/docs",
+                  "description": "Public data API for testing",
+              }]
+          }
+          parsed = catalog.parse_api_directory(__import__("json").dumps(amostra))
+          assert len(parsed) == 1 and parsed[0]["name"] == "Example Public API"
+
+          rows = [{
+              "name": f"Example API {n}",
+              "description": "Public API",
+              "auth": "Unknown",
+              "https": "Yes",
+              "cors": "Unknown",
+              "url": f"https://api{n}.example.org/docs",
+              "category": "Development",
+          } for n in range(10005)]
+          merged = catalog.merge([], [("test", rows, False)])
+          assert len(merged) == 10000, f"Limite incorreto: {len(merged)}"
+          print(f"OK: {len(ids)} kits; novos kits montáveis; parser e limite de 10.000 APIs validados.")
+          PY
