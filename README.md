@@ -4,7 +4,7 @@ Diretório de APIs públicas e gratuitas, com consultas prontas para Power BI. F
 
 **Acesse:** https://atlasapi-delta.vercel.app/
 
-Em outubro de 2026 o catálogo reúne mais de 3.100 APIs em 56 categorias. Os números aparecem no topo do site e mudam sozinhos conforme as fontes são atualizadas.
+O catálogo combina fontes públicas de APIs e especificações OpenAPI, com meta de até 10.000 registros únicos após deduplicação. O total real aparece no topo do site e varia conforme a disponibilidade e a atualização das fontes.
 
 ## Duas versões, o mesmo código
 
@@ -114,7 +114,7 @@ O código gerado pelos kits usa nomes de tabelas e colunas em português nos doi
 
 ## Fontes do catálogo
 
-O catálogo é montado ao vivo a partir de nove fontes do GitHub e APIs.guru, com cache de 30 minutos.
+O catálogo é montado ao vivo a partir de dez fontes públicas, com cache de 30 minutos e limite de 10.000 registros após deduplicação.
 
 | Fonte | Papel |
 |---|---|
@@ -127,6 +127,7 @@ O catálogo é montado ao vivo a partir de nove fontes do GitHub e APIs.guru, co
 | [jdorfman/awesome-json-datasets](https://github.com/jdorfman/awesome-json-datasets) | Endereços que devolvem JSON sem autenticação |
 | [dspinellis/awesome-rest-apis](https://github.com/dspinellis/awesome-rest-apis) | APIs REST abertas, sem cadastro ou pagamento, organizadas por tema |
 | [APIs-guru/openapi-directory](https://github.com/APIs-guru/openapi-directory) | Diretório de definições OpenAPI; metadados lidos pela [API pública do projeto](https://apis.guru/api-doc/) |
+| [API Directory](https://www.apidirectory.dev/) | Catálogo curado e índice amplo de especificações; a seleção é limitada e deduplicada para manter o site leve |
 
 Como as fontes são unidas (`catalog.py`):
 
@@ -136,7 +137,7 @@ Como as fontes são unidas (`catalog.py`):
 - Itens de conteúdo adulto são descartados.
 - Se uma fonte extra ficar fora do ar, o site continua com as demais e mostra um aviso.
 
-O diretório APIs.guru inclui APIs públicas documentadas, mas algumas podem exigir cadastro ou pagamento. Seus links apontam para as especificações OpenAPI, não necessariamente para endpoints de dados prontos para consulta. Quando a definição não informa autenticação, o cartão mostra "Não informado". Confira a documentação e o endpoint antes de usar o Gerador Python.
+Os diretórios APIs.guru e API Directory incluem APIs e especificações documentadas; algumas podem exigir cadastro ou pagamento, e uma especificação não garante que o serviço esteja ativo ou que tenha endpoint público sem autenticação. Seus links apontam para as especificações OpenAPI, não necessariamente para endpoints de dados prontos para consulta. Quando a definição não informa autenticação, o cartão mostra "Não informado". Confira a documentação e o endpoint antes de usar o Gerador Python.
 
 Algumas fontes não informam autenticação, HTTPS ou CORS; nesses cartões o campo aparece como "Não informado". Essas informações podem mudar e devem ser confirmadas na documentação de cada API.
 
