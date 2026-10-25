@@ -495,7 +495,7 @@ df = df.dropna(subset=["pais_iso3", "ano"]).reset_index(drop=True)''',
         "colunas": "data, artigo, visualizacoes",
         "parametros": [
             {"chave": "ARTIGO", "rotulo": "Artigo", "tipo": "texto", "padrao": "Artificial_intelligence",
-             "ajuda": "Nome da página em inglês, com espaços substituídos por sublinhados."},
+             "padrao_re": r"[A-Za-z0-9_%-]+", "ajuda": "Nome da página em inglês, com espaços substituídos por sublinhados."},
             {"chave": "DATA_INICIAL", "rotulo": "Data inicial", "tipo": "texto", "padrao": "20260101",
              "padrao_re": r"\d{8}", "ajuda": "Formato AAAAMMDD."},
             {"chave": "DATA_FINAL", "rotulo": "Data final", "tipo": "texto", "padrao": "20261025",
@@ -560,7 +560,7 @@ if not df.empty:
         "tabela": "fQualidadeAr",
         "colunas": "data_hora, cidade, latitude, longitude, pm2_5, pm10, nitrogen_dioxide, ozone",
         "parametros": [
-            {"chave": "CIDADE", "rotulo": "Cidade", "tipo": "texto", "padrao": "São Paulo"},
+            {"chave": "CIDADE", "rotulo": "Cidade", "tipo": "texto", "padrao": "São Paulo", "padrao_re": r"[A-Za-zÀ-ÿ0-9 .-]+"},
             {"chave": "LATITUDE", "rotulo": "Latitude", "tipo": "texto", "padrao": "-23.55", "padrao_re": r"-?\d+(\.\d+)?"},
             {"chave": "LONGITUDE", "rotulo": "Longitude", "tipo": "texto", "padrao": "-46.63", "padrao_re": r"-?\d+(\.\d+)?"},
         ],
