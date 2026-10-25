@@ -83,6 +83,18 @@ Participam 28 dos 30 kits; ficam fora "Municípios do Brasil" e "Deputados feder
 
 Para as demais APIs do catálogo: cole a URL de um endpoint que devolve JSON e receba o script em `requests` + `pandas`, com opção de chave de API no cabeçalho ou na URL.
 
+### Experiência de uso no site
+
+O site da Vercel segue sete leis de usabilidade:
+
+- **Jakob** (o que as pessoas já conhecem): abas fixas no topo ao rolar, `/` leva à busca e `Esc` limpa, filtros com botão "✕".
+- **Fitts** (alvos grandes e perto): fora do catálogo o topo encolhe; botão grande "Copiar código"; barra fixa com o botão de baixar no Montador.
+- **Hick** (menos opções de cada vez): 12 categorias mais populares primeiro, com a lista completa a um clique; kits agrupados por tema na lista e no Montador.
+- **Miller** (blocos menores): grupos por tema com contagem de kits marcados e total selecionado sempre à vista.
+- **Postel** (tolerante com a entrada): busca por várias palavras em qualquer ordem e sem acentos; o Gerador Python completa o `https://`; o kit vai para o Montador com os mesmos parâmetros.
+- **Pico-final** (bom fim de tarefa): ao copiar, um aviso diz onde colar; ao baixar o projeto, aparecem os próximos passos.
+- **Estética-usabilidade**: atualização sem piscar a tela, foco visível no teclado e rodapé com links úteis.
+
 ## Idiomas
 
 A interface está em português e em inglês, com seletor no topo. O idioma inicial é escolhido nesta ordem:

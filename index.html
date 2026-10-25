@@ -77,7 +77,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .tab { border: 0; background: none; padding: 12px 16px; font-size: .92rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
 .tab:hover { color: var(--ink); }
 .tab[aria-selected="true"] { color: var(--purple); border-bottom-color: var(--purple); }
-.panel[hidden] { display: none; }
+[hidden] { display: none !important; }
 
 /* Títulos de seção */
 .heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin: .5rem 0 1.15rem; }
@@ -219,6 +219,51 @@ footer strong { color: #25293b; font-size: .9rem; display: block; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading { color: var(--muted); font-size: .9rem; display: flex; gap: 10px; align-items: center; justify-content: center; padding: 2rem 0; }
 
+/* ── Usabilidade (7 leis) ── */
+/* Jakob: abas fixas no topo ao rolar, como em outros sites de ferramentas. */
+.tabs { position: sticky; top: 0; z-index: 20; background: rgba(248,249,252,.94); backdrop-filter: blur(6px); }
+/* Fitts: nas abas de ferramenta o topo encolhe e o conteúdo sobe para perto do clique. */
+body.compacto .hero { padding: 6px 0 4px; }
+body.compacto .hero h1, body.compacto .hero p, body.compacto .eyebrow { display: none; }
+body.compacto .stats { margin-top: .2rem; min-height: 0; }
+body.compacto .stat strong { font-size: 1.35rem; }
+body.compacto .stat span { font-size: .62rem; }
+body.compacto .stat-div { height: 1.6rem; }
+/* Fitts: botões de copiar maiores. */
+.code .copy { padding: 7px 14px; font-size: .8rem; font-weight: 600; border-radius: 8px; }
+.code-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: .2rem 0 .6rem; }
+/* Jakob/Postel: busca com dica, botão de limpar e atalho de teclado. */
+.search kbd { position: absolute; right: 1.2rem; top: 50%; transform: translateY(-50%); font: 600 .72rem Inter, sans-serif; color: var(--faint); border: 1px solid #e1e4ec; border-radius: 6px; padding: 2px 7px; background: #fafbfd; }
+.search input:not(:placeholder-shown) ~ kbd { display: none; }
+.search-hint { text-align: center; color: var(--faint); font-size: .78rem; margin: -2.3rem 0 2.2rem; }
+.chip { display: inline-flex; align-items: center; gap: .4rem; border: 1px solid var(--purple-line); background: #f4f3ff; color: var(--purple-2); border-radius: 999px; padding: .3rem .75rem; font-size: .8rem; font-weight: 600; cursor: pointer; }
+.chip:hover { background: #ebe9ff; }
+.cats-title { color: var(--muted); font-size: .76rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 .6rem; }
+.cats-toggle { margin-top: .7rem; }
+/* Hick/Miller: kits agrupados por tema. */
+.grupo { margin-bottom: 1rem; }
+.grupo-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0 0 .45rem; }
+.grupo-top h5 { margin: 0; font-size: .8rem; color: var(--ink-2); letter-spacing: .02em; }
+.grupo-top h5 span { color: var(--faint); font-weight: 500; }
+.linkbtn { border: 0; background: none; color: var(--purple); font-size: .78rem; font-weight: 600; cursor: pointer; padding: 2px 4px; }
+.linkbtn:hover { text-decoration: underline; }
+.picks { margin-bottom: 0; }
+/* Fitts: barra de ação fixa no Montador. */
+.acao-fixa { position: sticky; bottom: 0; z-index: 15; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: .6rem -20px .4rem; padding: .75rem 20px; background: rgba(248,249,252,.96); backdrop-filter: blur(6px); border-top: 1px solid var(--line); }
+.acao-fixa .contagem { font-size: .88rem; font-weight: 600; color: var(--ink-2); }
+/* Pico-final: confirmação clara depois do download. */
+.sucesso { background: var(--good-bg); border: 1px solid var(--good-line); border-radius: var(--radius); padding: 1rem 1.2rem; margin: .6rem 0 1rem; }
+.sucesso strong { color: var(--good-ink); }
+.sucesso ol { margin: .5rem 0 0; padding-left: 1.2rem; color: var(--ink-2); font-size: .9rem; }
+.toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); opacity: 0; z-index: 50; max-width: min(560px, calc(100vw - 32px)); background: var(--ink); color: #fff; border-radius: 12px; padding: .75rem 1.1rem; font-size: .88rem; box-shadow: 0 12px 30px rgba(23,26,46,.25); transition: opacity .2s, transform .2s; pointer-events: none; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+/* Estética-usabilidade: estado de atualização sem piscar e foco visível. */
+.atualizando { opacity: .55; transition: opacity .15s; }
+:focus-visible { outline: 3px solid rgba(108,99,255,.45); outline-offset: 2px; }
+footer nav { display: flex; gap: 1.1rem; flex-wrap: wrap; }
+footer nav a { color: var(--muted); text-decoration: none; font-weight: 600; }
+footer nav a:hover { color: var(--purple); }
+
 @media (max-width: 1000px) { .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 700px) {
   .grid3 { grid-template-columns: 1fr; }
@@ -229,7 +274,8 @@ footer strong { color: #25293b; font-size: .9rem; display: block; }
   .hero p { font-size: .92rem; }
   .stats { gap: 1.4rem; }
 }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .featured { transition: none; } .skeleton, .spinner { animation: none; } }
+@media (max-width: 700px) { .search kbd { display: none; } .search-hint { margin-top: -2.4rem; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .featured, .toast { transition: none; } .skeleton, .spinner { animation: none; } }
 </style>
 </head>
 <body>
@@ -259,7 +305,9 @@ footer strong { color: #25293b; font-size: .9rem; display: block; }
     <div class="search">
       <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="9.5" cy="9.5" r="6.5"/><path d="m14.5 14.5 5 5"/></svg>
       <input id="busca" type="search" autocomplete="off" data-t-ph="search_placeholder" data-t-label="search_label">
+      <kbd aria-hidden="true">/</kbd>
     </div>
+    <p class="search-hint" data-t="ux_search_hint"></p>
     <div id="catAviso"></div>
     <div id="catConteudo"><div class="loading"><span class="spinner"></span><span data-t="loading"></span></div></div>
   </section>
@@ -280,8 +328,12 @@ footer strong { color: #25293b; font-size: .9rem; display: block; }
         <button class="subtab" role="tab" data-sub="modelo" data-t="tab_model"></button>
         <button class="subtab" role="tab" data-sub="previa" data-t="tab_preview"></button>
       </div>
-      <div data-subpanel="m"><p class="note" id="mHow"></p><div class="code"><button class="copy" data-copy="kitM"></button><pre id="kitM"></pre></div><p class="note" id="mNote"></p></div>
-      <div data-subpanel="py" hidden><p class="note" id="pyHow"></p><div class="code"><button class="copy" data-copy="kitPy"></button><pre id="kitPy"></pre></div></div>
+      <div data-subpanel="m"><p class="note" id="mHow"></p>
+        <div class="code-actions"><button class="btn btn-primary" data-copy="kitM" data-copy-dica="ux_copied_m" data-t="ux_copy_code"></button><button class="btn btn-line" id="kitParaMontador" data-t="ux_use_in_builder"></button></div>
+        <div class="code"><button class="copy" data-copy="kitM" data-copy-dica="ux_copied_m"></button><pre id="kitM"></pre></div><p class="note" id="mNote"></p></div>
+      <div data-subpanel="py" hidden><p class="note" id="pyHow"></p>
+        <div class="code-actions"><button class="btn btn-primary" data-copy="kitPy" data-t="ux_copy_code"></button></div>
+        <div class="code"><button class="copy" data-copy="kitPy"></button><pre id="kitPy"></pre></div></div>
       <div data-subpanel="modelo" hidden>
         <div class="bridge"><strong data-t="bridge_title"></strong><p id="kitPonte"></p></div>
         <div class="two">
@@ -302,19 +354,20 @@ footer strong { color: #25293b; font-size: .9rem; display: block; }
   <section class="panel" id="p-montador" role="tabpanel" aria-labelledby="t-montador" hidden>
     <div class="heading"><h2 data-t="mont_title"></h2><span data-t="mont_sub"></span></div>
     <p class="intro" data-t="mont_intro"></p>
-    <h4 style="margin:.2rem 0 .6rem;font-size:.9rem" data-t="mont_select"></h4>
-    <div class="picks" id="montPicks"></div>
+    <div class="grupo-top"><h4 style="margin:.2rem 0 .6rem;font-size:.9rem" data-t="mont_select"></h4><button class="linkbtn" id="montLimpar" data-t="ux_clear_selection"></button></div>
+    <div id="montPicks"></div>
     <div id="montParams"></div>
     <div id="montCorpo">
       <div class="fields" style="grid-template-columns:minmax(0,420px);margin-top:1rem"><div class="field"><label for="montTitulo" data-t="mont_cover_title"></label><input type="text" id="montTitulo" maxlength="60"></div></div>
       <div id="montErro"></div>
       <div id="montResumo"></div>
-      <div class="row" style="margin:.4rem 0 .4rem"><button class="btn btn-primary" id="montBaixar" data-t="mont_download"></button></div>
       <p class="note" data-t="mont_how"></p>
+      <div id="montSucesso"></div>
       <div class="bridge"><strong data-t="bridge_title"></strong><p data-t="mont_bridge"></p></div>
       <p><a class="btn btn-line bdg" target="_blank" rel="noopener" data-t="open_bdg"></a></p>
     </div>
     <div id="montVazio"></div>
+    <div class="acao-fixa" id="montAcao"><span class="contagem" id="montContagem" aria-live="polite"></span><button class="btn btn-primary" id="montBaixar" data-t="mont_download"></button></div>
   </section>
 
   <!-- ═══ GERADOR PYTHON ═══ -->
@@ -339,9 +392,10 @@ footer strong { color: #25293b; font-size: .9rem; display: block; }
 
   <footer>
     <div><strong>API Atlas</strong><span data-t="footer_tag"></span></div>
-    <span id="fontes"></span>
+    <nav><a href="https://github.com/RodrigoAiosa/AtlasAPI" target="_blank" rel="noopener" data-t="ux_github"></a><a class="bdg" target="_blank" rel="noopener">BI Data Generator ↗</a><a href="#" id="topo" data-t="ux_back_top"></a></nav>
   </footer>
 </div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 "use strict";
@@ -353,7 +407,7 @@ const POR_PAGINA = 24;
 const S = {
   lang: "pt", cfg: null, textos: {}, apis: null, catErro: null,
   busca: "", categoria: null, limite: POR_PAGINA,
-  kit: null, valores: {}, sub: "m", previaKey: null,
+  kit: null, valores: {}, sub: "m", previaKey: null, todasCats: false,
   mont: { ids: [], valores: {}, titulo: null },
 };
 const $ = s => document.querySelector(s);
@@ -375,6 +429,11 @@ async function api(caminho, corpo) {
   const tipo = r.headers.get("Content-Type") || "";
   if (tipo.includes("application/json")) return { status: r.status, dados: await r.json() };
   return { status: r.status, blob: await r.blob() };
+}
+let toastId;
+function avisar(texto) {
+  const el = $("#toast"); el.textContent = texto; el.classList.add("on");
+  clearTimeout(toastId); toastId = setTimeout(() => el.classList.remove("on"), 3200);
 }
 function debounce(fn, ms) { let id; return (...a) => { clearTimeout(id); id = setTimeout(() => fn(...a), ms); }; }
 function blocoCodigo(id, codigo) {
@@ -424,8 +483,13 @@ $("#lang").addEventListener("change", async e => {
 function abrirAba(nome, focar) {
   $$(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === nome)));
   $$(".panel").forEach(p => { p.hidden = p.id !== "p-" + nome; });
+  // Fitts: fora do catálogo, o topo encolhe e a ferramenta fica perto do topo da tela.
+  document.body.classList.toggle("compacto", nome !== "catalogo");
   if (location.hash.slice(1) !== nome) history.replaceState(null, "", location.pathname + location.search + "#" + nome);
   if (focar) $("#t-" + nome).focus();
+  // No celular as abas rolam de lado: a aba ativa fica sempre à vista.
+  const barra = $(".tabs"), aba = $("#t-" + nome);
+  if (barra.scrollWidth > barra.clientWidth) barra.scrollTo({ left: aba.offsetLeft - 20 });
 }
 $$(".tab").forEach(b => b.addEventListener("click", () => abrirAba(b.dataset.tab)));
 document.querySelector(".tabs").addEventListener("keydown", e => {
@@ -439,7 +503,9 @@ document.addEventListener("click", async e => {
   const b = e.target.closest("[data-copy]"); if (!b) return;
   const texto = document.getElementById(b.dataset.copy)?.textContent || "";
   try { await navigator.clipboard.writeText(texto); } catch { const r = document.createRange(); r.selectNodeContents(document.getElementById(b.dataset.copy)); getSelection().removeAllRanges(); getSelection().addRange(r); document.execCommand("copy"); }
-  b.textContent = t("copied"); setTimeout(() => { b.textContent = t("copy"); }, 1400);
+  const rotulo = b.dataset.t ? t(b.dataset.t) : t("copy");
+  b.textContent = t("copied"); setTimeout(() => { b.textContent = rotulo; }, 1400);
+  avisar(t(b.dataset.copyDica || "ux_copied"));
 });
 
 /* ============================================================
@@ -501,8 +567,11 @@ function desenharCatalogo() {
   if (S.catErro) html += `<div class="alert err">${esc(S.catErro.erro)}</div><div class="alert info">${esc(S.catErro.dica || t("err_hint"))}</div>`;
   const q = fold(S.busca.trim());
   if (q) {
-    const achadas = S.apis.filter((_, i) => S.indice[i].includes(q));
-    html += `<div class="heading"><h2>${esc(t("results_title"))}</h2><span>${esc(achadas.length === 1 ? t("results_count_one") : t("results_count", { n: num(achadas.length) }))}</span></div>`;
+    // Postel: cada palavra precisa aparecer, em qualquer ordem, sem ligar para acentos.
+    const termos = q.split(/\s+/).filter(Boolean);
+    const achadas = S.apis.filter((_, i) => termos.every(termo => S.indice[i].includes(termo)));
+    html += `<div class="heading"><h2>${esc(t("results_title"))}</h2><span>${esc(achadas.length === 1 ? t("results_count_one") : t("results_count", { n: num(achadas.length) }))}
+      &nbsp;<button class="chip" id="limparBusca">✕ ${esc(t("ux_clear_search"))}</button></span></div>`;
     html += achadas.length ? grade(achadas)
       : `<div class="empty"><div class="big">⌕</div><h3>${esc(t("empty_title"))}</h3><p>${esc(t("empty_text"))}</p></div>`;
     alvo.innerHTML = html; return;
@@ -515,10 +584,17 @@ function desenharCatalogo() {
   if (!S.apis.length) { alvo.innerHTML = html + `<p class="note">${esc(t("categories_unavailable"))}</p>`; return; }
   const contagem = new Map();
   S.apis.forEach(a => contagem.set(a.c, (contagem.get(a.c) || 0) + 1));
-  const cats = [...contagem.keys()].sort((x, y) => fold(x).localeCompare(fold(y)));
-  html += `<div class="cats">${cats.map(c => `<button class="btn-soft${c === S.categoria ? " on" : ""}" data-cat="${esc(c)}">${esc(c)}  ·  ${num(contagem.get(c))}</button>`).join("")}</div>`;
+  // Hick: primeiro as 12 categorias com mais APIs; a lista completa fica a um clique.
+  const botaoCat = c => `<button class="btn-soft${c === S.categoria ? " on" : ""}" data-cat="${esc(c)}">${esc(c)}  ·  ${num(contagem.get(c))}</button>`;
+  const populares = [...contagem.keys()].sort((x, y) => contagem.get(y) - contagem.get(x)).slice(0, 12);
+  if (S.categoria && !populares.includes(S.categoria)) S.todasCats = true;
+  const cats = S.todasCats ? [...contagem.keys()].sort((x, y) => fold(x).localeCompare(fold(y))) : populares.sort((x, y) => fold(x).localeCompare(fold(y)));
+  if (!S.todasCats) html += `<p class="cats-title">${esc(t("ux_popular"))}</p>`;
+  html += `<div class="cats">${cats.map(botaoCat).join("")}</div>`;
+  html += `<button class="btn-soft cats-toggle" id="alternarCats">${esc(S.todasCats ? t("ux_fewer_cats") : t("ux_all_cats", { n: num(contagem.size) }))}</button>`;
   if (S.categoria && contagem.has(S.categoria)) {
-    html += `<div class="heading" id="listaCategoria" style="margin-top:2rem"><h2>${esc(S.categoria)}</h2><span>${esc(t("n_apis", { n: num(contagem.get(S.categoria)) }))}</span></div>`;
+    html += `<div class="heading" id="listaCategoria" style="margin-top:2rem"><h2>${esc(S.categoria)}</h2><span>${esc(t("n_apis", { n: num(contagem.get(S.categoria)) }))}
+      &nbsp;<button class="chip" id="voltarCatsChip">✕ ${esc(t("ux_clear_filter"))}</button></span></div>`;
     html += grade(S.apis.filter(a => a.c === S.categoria));
     html += `<button class="btn-soft back" id="voltarCats">${esc(t("back"))}</button>`;
   }
@@ -526,6 +602,13 @@ function desenharCatalogo() {
 }
 
 $("#busca").addEventListener("input", debounce(e => { S.busca = e.target.value; S.limite = POR_PAGINA; desenharCatalogo(); }, 160));
+function limparBusca() { $("#busca").value = ""; S.busca = ""; S.limite = POR_PAGINA; desenharCatalogo(); }
+// Jakob: "/" leva à busca e Esc limpa, como em GitHub, YouTube e outros sites.
+document.addEventListener("keydown", e => {
+  const digitando = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "");
+  if (e.key === "/" && !digitando) { e.preventDefault(); abrirAba("catalogo"); $("#busca").focus(); }
+  if (e.key === "Escape" && document.activeElement === $("#busca") && S.busca) { limparBusca(); }
+});
 $("#catConteudo").addEventListener("click", e => {
   const cat = e.target.closest("[data-cat]");
   if (cat) {
@@ -533,7 +616,9 @@ $("#catConteudo").addEventListener("click", e => {
     $("#listaCategoria")?.scrollIntoView({ block: "start" }); return;
   }
   if (e.target.closest("#maisApis")) { S.limite += POR_PAGINA; desenharCatalogo(); return; }
-  if (e.target.closest("#voltarCats")) { S.categoria = null; S.limite = POR_PAGINA; desenharCatalogo(); $("#categorias")?.scrollIntoView({ block: "start" }); }
+  if (e.target.closest("#limparBusca")) { limparBusca(); $("#busca").focus(); return; }
+  if (e.target.closest("#alternarCats")) { S.todasCats = !S.todasCats; desenharCatalogo(); return; }
+  if (e.target.closest("#voltarCats, #voltarCatsChip")) { S.categoria = null; S.limite = POR_PAGINA; desenharCatalogo(); $("#categorias")?.scrollIntoView({ block: "start" }); }
 });
 
 /* ============================================================
@@ -558,7 +643,9 @@ function lerCampo(el) { return el.type === "number" ? (el.value === "" ? null : 
 function montarKits() {
   const kits = S.cfg.kits;
   const atual = S.kit && kits.find(k => k.id === S.kit.id) ? S.kit.id : kits[0].id;
-  $("#kitSel").innerHTML = kits.map(k => `<option value="${k.id}">${k.icone}  ${esc(k.titulo)}</option>`).join("");
+  // Hick/Miller: os 30 kits aparecem em grupos por tema.
+  $("#kitSel").innerHTML = S.cfg.temas.map(tema => `<optgroup label="${esc(tema.nome)}">${kits.filter(k => k.tema === tema.id)
+    .map(k => `<option value="${k.id}">${k.icone}  ${esc(k.titulo)}</option>`).join("")}</optgroup>`).join("");
   $("#kitSel").value = atual;
   escolherKit(atual, true);
 }
@@ -584,6 +671,7 @@ function escolherKit(id, manterValores) {
   $("#kitVisuais").innerHTML = kit.visuais.map(v => `<li>${esc(v)}</li>`).join("");
   $("#kitDax").textContent = kit.dax;
   if (S.previaKey && !S.previaKey.startsWith(kit.id + "|")) { $("#previaOut").innerHTML = ""; S.previaKey = null; }
+  $("#kitParaMontador").hidden = !kit.montavel;
   atualizarCodigo();
 }
 
@@ -596,7 +684,9 @@ function valoresKit() {
 const atualizarCodigo = debounce(async () => {
   const kit = S.kit, valores = valoresKit();
   S.valores = valores;
+  $$("#kitM, #kitPy").forEach(el => el.classList.add("atualizando"));
   const { dados } = await api("/api/codigo", { kit: kit.id, valores });
+  $$("#kitM, #kitPy").forEach(el => el.classList.remove("atualizando"));
   if (S.kit !== kit) return;
   if (dados.erro) {
     $("#kitErro").innerHTML = `<div class="alert warn">${esc(dados.erro)}</div>`;
@@ -610,6 +700,15 @@ const atualizarCodigo = debounce(async () => {
 }, 220);
 
 $("#kitSel").addEventListener("change", e => escolherKit(e.target.value, false));
+// Postel/Tesler: o kit vai para o Montador com os parâmetros já escolhidos, sem refazer nada.
+$("#kitParaMontador").addEventListener("click", () => {
+  const kit = S.kit;
+  S.mont.valores[kit.id] = valoresKit();
+  if (!S.mont.ids.includes(kit.id)) S.mont.ids.push(kit.id);
+  montarMontador(); abrirAba("montador");
+  document.querySelector(`#montPicks input[value="${kit.id}"]`)?.closest(".grupo")?.scrollIntoView({ block: "center" });
+  avisar(t("ux_added_builder"));
+});
 $("#kitParams").addEventListener("input", atualizarCodigo);
 $("#kitParams").addEventListener("change", atualizarCodigo);
 
@@ -664,7 +763,15 @@ function montarMontador() {
   if (!S.mont.iniciado) { S.mont.ids = [...S.cfg.padrao_montador]; S.mont.iniciado = true; }
   if (S.mont.titulo === null || S.mont.tituloPadrao) { S.mont.titulo = t("mont_cover_default"); S.mont.tituloPadrao = true; }
   $("#montTitulo").value = S.mont.titulo;
-  $("#montPicks").innerHTML = montaveis.map(k => `<label class="pick"><input type="checkbox" value="${k.id}"${S.mont.ids.includes(k.id) ? " checked" : ""}> <span>${k.icone}  ${esc(k.titulo)}</span></label>`).join("");
+  // Hick/Miller: kits em grupos por tema, com atalho para marcar o tema inteiro.
+  $("#montPicks").innerHTML = S.cfg.temas.map(tema => {
+    const doTema = montaveis.filter(k => k.tema === tema.id);
+    if (!doTema.length) return "";
+    const marcados = doTema.filter(k => S.mont.ids.includes(k.id)).length;
+    return `<div class="grupo"><div class="grupo-top"><h5>${esc(tema.nome)} <span>· ${marcados}/${doTema.length}</span></h5>
+      <button class="linkbtn" data-tema="${tema.id}">${esc(t("ux_select_theme"))}</button></div>
+      <div class="picks">${doTema.map(k => `<label class="pick"><input type="checkbox" value="${k.id}"${S.mont.ids.includes(k.id) ? " checked" : ""}> <span>${k.icone}  ${esc(k.titulo)}</span></label>`).join("")}</div></div>`;
+  }).join("");
   desenharParamsMontador();
   atualizarMontador();
 }
@@ -687,11 +794,17 @@ let pedidoMont = 0;
 const atualizarMontador = debounce(async () => {
   const vazio = !S.mont.ids.length;
   $("#montCorpo").hidden = vazio;
+  $("#montLimpar").hidden = vazio;
+  $("#montAcao").hidden = vazio;
+  $("#montContagem").textContent = S.mont.ids.length === 1 ? t("ux_selected_one") : t("ux_selected", { n: S.mont.ids.length });
+  $("#montSucesso").innerHTML = "";
   $("#montVazio").innerHTML = vazio ? `<div class="alert info">${esc(t("mont_empty"))}</div>` : "";
   if (vazio) return;
   const meu = ++pedidoMont;
+  $("#montResumo").classList.add("atualizando");
   const { dados } = await api("/api/projeto", { kits: lerMontador(), titulo: S.mont.titulo });
   if (meu !== pedidoMont) return;
+  $("#montResumo").classList.remove("atualizando");
   if (dados.erro) {
     $("#montErro").innerHTML = `<div class="alert warn">${esc(dados.erro)}</div>`;
     $("#montResumo").innerHTML = ""; $("#montBaixar").disabled = true; return;
@@ -713,8 +826,19 @@ $("#montPicks").addEventListener("change", e => {
   const id = e.target.value;
   if (e.target.checked) { if (!S.mont.ids.includes(id)) S.mont.ids.push(id); }
   else S.mont.ids = S.mont.ids.filter(x => x !== id);
-  lerMontador(); desenharParamsMontador(); atualizarMontador();
+  lerMontador(); redesenharEscolhas();
 });
+function redesenharEscolhas() {
+  const rolagem = window.scrollY;
+  montarMontador(); window.scrollTo(0, rolagem);
+}
+$("#montPicks").addEventListener("click", e => {
+  const b = e.target.closest("[data-tema]"); if (!b) return;
+  lerMontador();
+  S.cfg.kits.filter(k => k.montavel && k.tema === b.dataset.tema).forEach(k => { if (!S.mont.ids.includes(k.id)) S.mont.ids.push(k.id); });
+  redesenharEscolhas();
+});
+$("#montLimpar").addEventListener("click", () => { lerMontador(); S.mont.ids = []; redesenharEscolhas(); });
 $("#montParams").addEventListener("input", atualizarMontador);
 $("#montParams").addEventListener("change", atualizarMontador);
 $("#montTitulo").addEventListener("input", e => { S.mont.titulo = e.target.value; S.mont.tituloPadrao = false; atualizarMontador(); });
@@ -724,7 +848,13 @@ $("#montBaixar").addEventListener("click", async () => {
   botao.disabled = true; botao.innerHTML = `<span class="spinner"></span> ${esc(rotulo)}`;
   try {
     const r = await api("/api/projeto", { kits: lerMontador(), titulo: S.mont.titulo, baixar: true });
-    if (r.blob) baixar(r.blob, "AtlasProjeto.zip");
+    if (r.blob) {
+      baixar(r.blob, "AtlasProjeto.zip");
+      // Pico-final: o download termina com os próximos passos à vista.
+      $("#montSucesso").innerHTML = `<div class="sucesso" role="status"><strong>✓ ${esc(t("ux_done_title"))}</strong>
+        <ol>${t("ux_done_steps").split("|").map(p => `<li>${esc(p)}</li>`).join("")}</ol></div>`;
+      $("#montSucesso").scrollIntoView({ block: "center" });
+    }
     else $("#montErro").innerHTML = `<div class="alert warn">${esc(r.dados?.erro || t("err_load"))}</div>`;
   } finally { botao.disabled = false; botao.textContent = rotulo; }
 });
@@ -736,14 +866,16 @@ const gerarScript = debounce(async () => {
   const auth = $("#genAuth").value;
   $("#genChaveBox").hidden = auth === "none";
   $("#genChave").placeholder = auth === "header" ? "X-API-Key" : "apikey";
-  const url = $("#genUrl").value;
-  if (!url.trim()) { $("#genOut").innerHTML = `<p class="note">${esc(t("gen_hint"))}</p>`; return; }
+  let url = $("#genUrl").value.trim(), corrigida = false;
+  // Postel: aceita "api.exemplo.com/v1" e completa o https://.
+  if (url && !/^[a-z][a-z0-9+.-]*:\/\//i.test(url) && /^[\w-]+(\.[\w-]+)+/.test(url)) { url = "https://" + url; corrigida = true; }
+  if (!url) { $("#genOut").innerHTML = `<p class="note">${esc(t("gen_hint"))}</p>`; return; }
   const { dados } = await api("/api/script", {
     url, caminho: $("#genCaminho").value, autenticacao: auth,
     nome_chave: auth === "none" ? "" : $("#genChave").value, csv: $("#genCsv").checked,
   });
   if (dados.erro) { $("#genOut").innerHTML = `<div class="alert warn">${esc(dados.erro)}</div>`; return; }
-  let dica = t("gen_how");
+  let dica = (corrigida ? t("ux_url_fixed") + " " : "") + t("gen_how");
   if (auth !== "none") dica += " " + t("gen_swap_key", { placeholder: t("code_key_placeholder") });
   $("#genOut").innerHTML = blocoCodigo("genCodigo", dados.codigo) + `<p class="note">${esc(dica)}</p>
     <div class="bridge"><strong>${esc(t("next_title"))}</strong><p>${esc(t("next_text"))}</p></div>
@@ -751,6 +883,8 @@ const gerarScript = debounce(async () => {
 }, 250);
 ["#genUrl", "#genCaminho", "#genChave"].forEach(s => $(s).addEventListener("input", gerarScript));
 ["#genAuth", "#genCsv"].forEach(s => $(s).addEventListener("change", gerarScript));
+
+$("#topo").addEventListener("click", e => { e.preventDefault(); window.scrollTo({ top: 0 }); });
 
 /* ============================================================
    INÍCIO
@@ -765,6 +899,7 @@ const gerarScript = debounce(async () => {
     $("#catConteudo").innerHTML = `<div class="alert err">Não foi possível carregar o site. Tente recarregar a página.</div>`;
     return;
   }
+  abrirAba(location.hash.slice(1) || "catalogo"); // com os nomes das abas já carregados
   carregarCatalogo();
   montarKits();
   montarMontador();
