@@ -292,7 +292,7 @@ def _ler_fonte(fonte: dict) -> list[dict]:
 
 
 def carregar_catalogo() -> tuple[list[dict], list[str]]:
-    """Igual a catalog.load, mas baixa as sete fontes ao mesmo tempo."""
+    """Igual a catalog.load, baixando a fonte principal e as fontes extras em paralelo."""
     with ThreadPoolExecutor(max_workers=len(catalog.EXTRAS) + 1) as grupo:
         principal = grupo.submit(lambda: catalog.parse_readme(catalog.fetch(catalog.PRIMARY["urls"])))
         extras = [(fonte, grupo.submit(_ler_fonte, fonte)) for fonte in catalog.EXTRAS]
