@@ -134,6 +134,7 @@ Como as fontes são unidas (`catalog.py`):
 - A fonte principal entra inteira. As demais só acrescentam o que é novo, na ordem da tabela.
 - É duplicata o item com o mesmo nome, o mesmo endereço ou, na maioria das fontes, o mesmo domínio de outro já listado. Fontes que reúnem vários serviços no mesmo host, como os conjuntos de dados e o diretório OpenAPI, podem manter APIs distintas do mesmo domínio.
 - As categorias de cada fonte são convertidas para as do site.
+- O leitor do API Directory percorre registros candidatos, conserva nome, descrição e URL documentada e limita a resposta final a 10.000 entradas após a deduplicação.
 - Itens de conteúdo adulto são descartados.
 - Se uma fonte extra ficar fora do ar, o site continua com as demais e mostra um aviso.
 
