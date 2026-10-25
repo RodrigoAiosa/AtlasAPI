@@ -202,6 +202,8 @@ O repositório está ligado à Vercel pelo GitHub:
 
 As funções ficam na pasta `api/`, com os limites de tempo definidos em `vercel.json` e as dependências em `pyproject.toml`. A página é o `index.html`.
 
+O workflow `.github/workflows/validate.yml` valida a sintaxe Python, os IDs dos kits, a inclusão dos novos kits no Montador, o parser da fonte API Directory e o limite de 10.000 registros.
+
 ## Como ampliar
 
 **Novo kit do IBGE.** Acrescente uma chamada a `_kit(...)` em `kits_ibge.py` com o caminho da consulta no SIDRA, o nível territorial (`municipio`, `uf` ou `brasil`), o tipo de período (`ano`, `mes` ou `trimestre`) e as medidas. O Power Query e o Python são gerados a partir disso. Inclua a tradução em `KITS_EN`, no mesmo arquivo.
