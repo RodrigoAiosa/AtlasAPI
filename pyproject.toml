@@ -1,5 +1,4 @@
-# Dependências das funções da Vercel (pasta api/). O app Streamlit continua
-# usando o requirements.txt: o Streamlit Cloud lê esse arquivo antes deste.
+# Dependências das funções da Vercel (pasta api/).
 [project]
 name = "api-atlas"
 version = "1.0.0"

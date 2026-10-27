@@ -115,7 +115,7 @@ def fetch(urls) -> str:
     last_error: Exception | None = None
     for url in urls:
         try:
-            response = requests.get(url, timeout=25, headers={"User-Agent": "API-Atlas-Streamlit"})
+            response = requests.get(url, timeout=25, headers={"User-Agent": "API-Atlas"})
             response.raise_for_status()
             return response.text
         except requests.RequestException as exc:

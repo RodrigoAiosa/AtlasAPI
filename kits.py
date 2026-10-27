@@ -6,17 +6,15 @@ são trocados pelos parâmetros escolhidos na tela.
 """
 from __future__ import annotations
 
-import datetime as dt
 import re
 from urllib.parse import parse_qsl, urlsplit
 
 import pandas as pd
-import streamlit as st
 
 import kits_i18n
 import kits_extra
 import kits_ibge
-from i18n import keyed, lang, number, t
+from i18n import lang, t
 
 BI_DATA_GENERATOR_URL = "https://bi-data-generator.vercel.app/"
 
@@ -975,7 +973,6 @@ def checar_intervalos(brutos: dict) -> None:
             raise ValueError(t("period_error"))
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
 def executar_previa(codigo: str) -> pd.DataFrame:
     """Roda o script Python do kit e devolve o DataFrame `df`."""
     ambiente: dict = {"__name__": "kit"}
@@ -1038,156 +1035,3 @@ def gerar_script_generico(url: str, caminho: str, autenticacao: str, nome_chave:
     if salvar_csv:
         linhas += ["", f'df.to_csv("{t("code_csv_name")}", index=False, encoding="utf-8-sig")']
     return "\n".join(linhas)
-
-
-# ---------- Telas ----------
-
-def _campo(kit: dict, parametro: dict, prefixo: str = "kit"):
-    # O prefixo separa os campos de cada aba, que são desenhados na mesma execução.
-    chave = f"{prefixo}_{kit['id']}_{parametro['chave']}"
-    rotulo = tr_parametro(kit, parametro, "rotulo")
-    tipo = parametro["tipo"]
-    if tipo == "data":
-        formato = "DD/MM/YYYY" if lang() == "pt" else "YYYY-MM-DD"
-        return st.date_input(rotulo, value=dt.date.fromisoformat(parametro["padrao"]),
-                             min_value=dt.date(1950, 1, 1), max_value=dt.date.today(), format=formato, key=chave)
-    if tipo == "inteiro":
-        return st.number_input(rotulo, value=parametro["padrao"], min_value=parametro["min"],
-                               max_value=parametro["max"], step=1, key=chave)
-    if tipo == "opcoes":
-        rotulos = tr_parametro(kit, parametro, "opcoes")
-        return st.selectbox(rotulo, range(len(rotulos)), format_func=lambda i: rotulos[i], key=keyed(chave))
-    return st.text_input(rotulo, value=parametro["padrao"], help=tr_parametro(kit, parametro, "ajuda"), key=chave)
-
-
-def render_kits() -> None:
-    link = f'<a href="{BI_DATA_GENERATOR_URL}" target="_blank" rel="noopener noreferrer">BI Data Generator</a>'
-    st.markdown(
-        f'<div class="section-heading"><h2>{t("kits_title")}</h2><span>{t("kits_sub")}</span></div>'
-        f'<p class="kit-intro">{t("kits_intro", link=link)}</p>',
-        unsafe_allow_html=True,
-    )
-
-    kit = KITS[st.selectbox(
-        t("kit_select"), range(len(KITS)),
-        format_func=lambda i: f"{KITS[i]['icone']}  {tr(KITS[i], 'titulo')}", key=keyed("kit_escolhido"),
-    )]
-    papel = t("role_fact") if kit["papel"] == "Fato" else t("role_dimension")
-
-    st.markdown(
-        '<div class="kit-card">'
-        f'<div class="kit-icon">{kit["icone"]}</div>'
-        '<div class="kit-body">'
-        f'<div class="kit-title">{tr(kit, "titulo")}</div>'
-        f'<div class="kit-source">{tr(kit, "fonte")} · <a href="{kit["docs"]}" target="_blank" rel="noopener noreferrer">{t("docs")}</a></div>'
-        f'<p>{tr(kit, "resumo")}</p>'
-        '<div class="meta-row">'
-        f'<span class="meta-pill status-neutral"><span class="meta-label">{t("role")}</span>{papel}</span>'
-        f'<span class="meta-pill status-neutral"><span class="meta-label">{t("table")}</span>{kit["tabela"]}</span>'
-        f'<span class="meta-pill status-good">{t("no_auth")}</span>'
-        "</div>"
-        f'<div class="kit-columns"><span class="meta-label">{t("columns")}</span> {tr(kit, "colunas")}</div>'
-        "</div></div>",
-        unsafe_allow_html=True,
-    )
-
-    valores: dict[str, str] = {}
-    brutos: dict = {}
-    if kit["parametros"]:
-        colunas = st.columns(len(kit["parametros"]))
-        for coluna, parametro in zip(colunas, kit["parametros"]):
-            with coluna:
-                brutos[parametro["chave"]] = _campo(kit, parametro)
-    try:
-        for parametro in kit["parametros"]:
-            valores.update(validar(
-                parametro, brutos[parametro["chave"]],
-                tr_parametro(kit, parametro, "rotulo"), tr_parametro(kit, parametro, "ajuda") or "",
-            ))
-        checar_intervalos(brutos)
-    except ValueError as erro:
-        st.warning(str(erro))
-        return
-    if kit.get("observacao"):
-        st.caption(tr(kit, "observacao"))
-
-    codigo_m = preencher(kit["m"], valores)
-    codigo_python = preencher(kit["python"], valores)
-    nota_nomes = t("code_names_note")
-
-    aba_m, aba_python, aba_modelo, aba_previa = st.tabs(
-        [t("tab_m"), t("tab_py"), t("tab_model"), t("tab_preview")]
-    )
-    with aba_m:
-        st.caption(t("m_how", table=kit["tabela"]))
-        st.code(codigo_m, language="powerquery")
-        st.caption(f'{t("m_note")} {nota_nomes}'.strip())
-    with aba_python:
-        st.caption(f'{t("py_how")} {nota_nomes}'.strip())
-        st.code(codigo_python, language="python")
-    with aba_modelo:
-        st.markdown(f'<div class="kit-bridge"><strong>{t("bridge_title")}</strong><p>{tr(kit, "ponte")}</p></div>',
-                    unsafe_allow_html=True)
-        esquerda, direita = st.columns(2)
-        with esquerda:
-            st.markdown(f'**{t("visuals_title")}**')
-            st.markdown("\n".join(f"- {item}" for item in tr(kit, "visuais")))
-        with direita:
-            st.markdown(f'**{t("dax_title")}**')
-            st.code(tr(kit, "dax"), language="dax")
-        st.link_button(t("open_bdg"), BI_DATA_GENERATOR_URL)
-    with aba_previa:
-        st.caption(t("preview_caption"))
-        if st.button(t("preview_button"), key=f"previa_{kit['id']}"):
-            st.session_state["previa_codigo"] = codigo_python
-        if st.session_state.get("previa_codigo") == codigo_python:
-            try:
-                with st.spinner(t("preview_spinner")):
-                    tabela = executar_previa(codigo_python)
-            except Exception as erro:  # a API pode estar fora do ar ou recusar o período
-                st.error(t("preview_error"))
-                st.caption(t("preview_detail", detail=f"{type(erro).__name__}: {str(erro)[:200]}"))
-            else:
-                if tabela.empty:
-                    st.warning(t("preview_empty"))
-                st.caption(t("preview_shape", rows=number(len(tabela)), cols=len(tabela.columns)))
-                st.dataframe(tabela.head(200), use_container_width=True, hide_index=True)
-                st.download_button(t("download_csv"), tabela.to_csv(index=False).encode("utf-8-sig"),
-                                   file_name=f"{kit['tabela']}.csv", mime="text/csv", key=f"csv_{kit['id']}")
-
-
-def render_gerador_python() -> None:
-    st.markdown(
-        f'<div class="section-heading"><h2>{t("gen_title")}</h2><span>{t("gen_sub")}</span></div>'
-        f'<p class="kit-intro">{t("gen_intro")}</p>',
-        unsafe_allow_html=True,
-    )
-    url = st.text_input(t("gen_url"), placeholder=t("gen_url_ph"), key="gerador_url")
-    esquerda, direita = st.columns(2)
-    with esquerda:
-        caminho = st.text_input(t("gen_path"), placeholder="data.items", help=t("gen_path_help"), key="gerador_caminho")
-        salvar_csv = st.checkbox(t("gen_csv"), key="gerador_csv")
-    with direita:
-        autenticacao = st.selectbox(t("gen_auth"), ["none", "header", "query"],
-                                    format_func=lambda codigo: t(f"auth_{codigo}"), key=keyed("gerador_auth"))
-        nome_chave = ""
-        if autenticacao != "none":
-            exemplo = "X-API-Key" if autenticacao == "header" else "apikey"
-            nome_chave = st.text_input(t("gen_key_name"), placeholder=exemplo, key="gerador_nome_chave")
-
-    if not url.strip():
-        st.caption(t("gen_hint"))
-        return
-    try:
-        codigo = gerar_script_generico(url, caminho, autenticacao, nome_chave, salvar_csv)
-    except ValueError as erro:
-        st.warning(str(erro))
-        return
-    st.code(codigo, language="python")
-    dica = t("gen_how")
-    if autenticacao != "none":
-        dica += " " + t("gen_swap_key", placeholder=t("code_key_placeholder"))
-    st.caption(dica)
-    st.markdown(f'<div class="kit-bridge"><strong>{t("next_title")}</strong><p>{t("next_text")}</p></div>',
-                unsafe_allow_html=True)
-    st.link_button(t("open_bdg"), BI_DATA_GENERATOR_URL)

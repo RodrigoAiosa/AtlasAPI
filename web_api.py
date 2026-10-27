@@ -1,9 +1,7 @@
 """Ponte entre o código do API Atlas e as funções da Vercel (pasta api/).
 
-O site na Vercel usa os mesmos módulos do app Streamlit (catalog, kits,
-kits_ibge, kits_i18n, montador e i18n). Esses módulos importam o Streamlit
-só para a tela; aqui um substituto mínimo ocupa o lugar dele, de modo que
-a lógica roda sem instalar o Streamlit.
+As funções chamam os módulos de lógica (catalog, kits, kits_extra,
+kits_ibge, kits_i18n, montador e i18n) e devolvem JSON ou o .zip do projeto.
 
 Cada requisição define o idioma em `usar_idioma` antes de chamar a lógica.
 """
@@ -11,39 +9,16 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-import sys
-import types
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlsplit
 
 
-def _streamlit_substituto() -> None:
-    """Módulo `streamlit` falso: só o que os módulos de lógica usam ao serem importados."""
-    if "streamlit" in sys.modules and getattr(sys.modules["streamlit"], "_atlas_substituto", False):
-        return
-    st = types.ModuleType("streamlit")
-    st._atlas_substituto = True
-    st.session_state = {}
+import catalog
+import i18n
+import kits
+import montador
 
-    def cache_data(*args, **kwargs):
-        if args and callable(args[0]) and not kwargs:
-            return args[0]
-        return lambda funcao: funcao
-
-    st.cache_data = cache_data
-    st.cache_resource = cache_data
-    sys.modules["streamlit"] = st
-
-
-_streamlit_substituto()
-
-import catalog  # noqa: E402
-import i18n  # noqa: E402
-import kits  # noqa: E402
-import montador  # noqa: E402
-
-st = sys.modules["streamlit"]
 PAGINA_PREVIA = 200
 LIMITE_CSV = 8_000_000  # bytes; acima disso a prévia não traz o CSV completo
 
@@ -51,22 +26,17 @@ LIMITE_CSV = 8_000_000  # bytes; acima disso a prévia não traz o CSV completo
 # ---------- Idioma ----------
 
 def usar_idioma(codigo: str | None) -> str:
-    codigo = (codigo or "").strip().lower()[:2]
-    if codigo not in i18n.SUPPORTED:
-        codigo = i18n.DEFAULT
-    st.session_state["lang"] = codigo
-    return codigo
+    return i18n.set_lang(codigo)
 
 
 def detectar_idioma(cabecalhos) -> str:
-    """Mesma ordem do app: navegador e depois país de acesso (a Vercel envia X-Vercel-IP-Country)."""
+    """Idioma do navegador e, se ele não servir, o país de acesso (a Vercel envia X-Vercel-IP-Country)."""
     return i18n.detect(None, None, cabecalhos)
 
 
 # ---------- Configuração da página: textos e kits ----------
 
-# APIs em destaque na aba Catálogo (as mesmas do app.py, que não pode ser importado aqui
-# porque desenha a tela do Streamlit ao ser carregado).
+# APIs em destaque na aba Catálogo.
 DESTAQUES = [
     {"name": "Open-Meteo", "category": "Weather", "description": "Weather forecasts and historical weather data.", "icon": "🌤️", "url": "https://open-meteo.com/"},
     {"name": "The Cat API", "category": "Animals", "description": "Images, facts, and other data about cats.", "icon": "🐈", "url": "https://thecatapi.com/"},
@@ -126,14 +96,14 @@ def configuracao(idioma: str) -> dict:
             "tema": _tema(kit["id"]),
         })
     return {
-        "lang": st.session_state["lang"],
+        "lang": i18n.lang(),
         "idiomas": i18n.SUPPORTED,
-        "textos": {**i18n.STRINGS[i18n.DEFAULT], **i18n.STRINGS.get(st.session_state["lang"], {})},
+        "textos": {**i18n.STRINGS[i18n.DEFAULT], **i18n.STRINGS.get(i18n.lang(), {})},
         "destaques": [{"nome": d["name"], "icone": d["icon"], "url": d["url"],
                        "categoria": i18n.category(d["category"]),
                        "descricao": i18n.featured_description(d["name"], d["description"])} for d in DESTAQUES],
         "kits": lista,
-        "temas": [{"id": chave, "nome": _nome_tema(chave, st.session_state["lang"])}
+        "temas": [{"id": chave, "nome": _nome_tema(chave, i18n.lang())}
                   for chave in ORDEM_TEMAS if any(k["tema"] == chave for k in lista)],
         "bdg": kits.BI_DATA_GENERATOR_URL,
         "padrao_montador": [i for i in ("populacao", "pib_municipios", "ipca") if i in montaveis],
