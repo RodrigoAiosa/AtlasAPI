@@ -1148,6 +1148,8 @@ def render_kits() -> None:
                 st.error(t("preview_error"))
                 st.caption(t("preview_detail", detail=f"{type(erro).__name__}: {str(erro)[:200]}"))
             else:
+                if tabela.empty:
+                    st.warning(t("preview_empty"))
                 st.caption(t("preview_shape", rows=number(len(tabela)), cols=len(tabela.columns)))
                 st.dataframe(tabela.head(200), use_container_width=True, hide_index=True)
                 st.download_button(t("download_csv"), tabela.to_csv(index=False).encode("utf-8-sig"),

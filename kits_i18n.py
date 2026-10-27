@@ -300,11 +300,11 @@ KITS["en"].update({
             "titulo": "Breweries by country",
             "fonte": "Open Brewery DB",
             "resumo": "Public directory of breweries, brewpubs and cideries with type, city, region and coordinates.",
-            "observacao": "Coverage is strongest in the United States; countries with less coverage may return few rows. No API key is required.",
+            "observacao": "A community database that mainly covers the United States (about 8,300 breweries) and Germany (about 1,400). The list only shows countries with data; Brazil has no breweries in the database. In smaller countries, pages 2 and 3 may be empty: the query warns when that happens.",
             "ponte": "Use city, region and coordinates to explore geographic distribution and compare establishment types by location.",
             "visuais": ["Breweries by type", "Table by city and region", "Map using latitude and longitude"],
             "parametros": {
-                "PAIS": {"rotulo": "Country", "opcoes": ["United States", "Brazil", "Germany", "United Kingdom", "Canada"]},
+                "PAIS": {"rotulo": "Country", "opcoes": ["United States", "Germany", "Australia", "Belgium", "Canada", "New Zealand", "South Africa", "Netherlands", "Portugal", "Ireland", "Finland", "England", "South Korea", "Sweden", "Poland", "Singapore", "Austria", "Scotland"]},
                 "LIMITE": {"rotulo": "Rows per page", "opcoes": ["50", "100", "200"]},
                 "PAGINA": {"rotulo": "Page", "opcoes": ["1", "2", "3"]},
             },
