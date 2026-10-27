@@ -14,8 +14,6 @@ import re
 import uuid
 import zipfile
 
-import streamlit as st
-
 import kits
 from i18n import lang, t
 
@@ -797,83 +795,3 @@ def _leiame(plano: dict) -> str:
     linhas += [f"  - {a}[{b}] -> {c}[{d}]" for a, b, c, d in plano["relacionamentos"]] or ["  -"]
     linhas += ["", t("mont_readme_extra"), "", t("mont_readme_source")]
     return "\n".join(linhas) + "\n"
-
-
-def render() -> None:
-    st.markdown(
-        f'<div class="section-heading"><h2>{t("mont_title")}</h2><span>{t("mont_sub")}</span></div>'
-        f'<p class="kit-intro">{t("mont_intro")}</p>',
-        unsafe_allow_html=True,
-    )
-    disponiveis = montaveis()
-    por_id = {kit["id"]: kit for kit in disponiveis}
-    padrao = [i for i in ("populacao", "pib_municipios", "ipca") if i in por_id]
-    escolhidos = st.multiselect(
-        t("mont_select"), list(por_id), default=padrao,
-        format_func=lambda i: f"{por_id[i]['icone']}  {kits.tr(por_id[i], 'titulo')}", key=f"mont_kits__{lang()}",
-    )
-    if not escolhidos:
-        st.info(t("mont_empty"))
-        return
-
-    selecao = []
-    for kit in (por_id[i] for i in escolhidos):
-        valores, brutos = {}, {}
-        if kit["parametros"]:
-            with st.expander(f"{kit['icone']}  {kits.tr(kit, 'titulo')}"):
-                colunas = st.columns(len(kit["parametros"]))
-                for coluna, parametro in zip(colunas, kit["parametros"]):
-                    with coluna:
-                        brutos[parametro["chave"]] = kits._campo(kit, parametro, "mont")
-        try:
-            for parametro in kit["parametros"]:
-                valores.update(kits.validar(
-                    parametro, brutos[parametro["chave"]],
-                    kits.tr_parametro(kit, parametro, "rotulo"), kits.tr_parametro(kit, parametro, "ajuda") or "",
-                ))
-            kits.checar_intervalos(brutos)
-        except ValueError as erro:
-            st.warning(f"{kits.tr(kit, 'titulo')}: {erro}")
-            return
-        selecao.append((kit, valores))
-
-    plano = planejar(selecao)
-    plano["titulo"] = st.text_input(t("mont_cover_title"), value=t("mont_cover_default"), max_chars=60,
-                                    key=f"mont_titulo__{lang()}")
-    esquerda, direita = st.columns(2)
-    with esquerda:
-        st.markdown(f"**{t('mont_tables')}**")
-        linhas = []
-        for item in plano["tabelas"]:
-            nota = f" · {t('mont_auto')}" if item.get("automatica") else ""
-            linhas.append(f"- `{item['nome']}` ({len(item['esquema'])} {t('mont_columns')}){nota}")
-        st.markdown("\n".join(linhas))
-    with direita:
-        st.markdown(f"**{t('mont_rels')}**")
-        if plano["relacionamentos"]:
-            st.markdown("\n".join(f"- `{a}[{b}]` → `{c}[{d}]`" for a, b, c, d in plano["relacionamentos"]))
-        else:
-            st.caption(t("mont_no_rels"))
-        st.markdown(f"**{t('mont_measures')}**")
-        if plano["medidas"]:
-            st.markdown("\n".join(f"- {m['name']}" for m in plano["medidas"]))
-        else:
-            st.caption(t("mont_no_measures"))
-    secoes = paginas(plano)
-    st.markdown(f"**{t('mont_pages')}**")
-    st.markdown("\n".join(
-        f"- {secao['displayName']}" + (f" ({n} {t('mont_visuals')})" if n else "")
-        for secao in secoes for n in [sum("prototypeQuery" in v["config"] for v in secao["visualContainers"])]
-    ))
-    for aviso in plano["avisos"]:
-        st.caption(t(f"mont_{aviso}"))
-    if plano["soltas"]:
-        st.caption(t("mont_loose", tables=", ".join(plano["soltas"])))
-
-    pacote = compactar(arquivos(plano, _leiame(plano)))
-    st.download_button(t("mont_download"), pacote, file_name=f"{PROJETO}.zip", mime="application/zip",
-                       key="mont_download", type="primary")
-    st.caption(t("mont_how"))
-    st.markdown(f'<div class="kit-bridge"><strong>{t("bridge_title")}</strong><p>{t("mont_bridge")}</p></div>',
-                unsafe_allow_html=True)
-    st.link_button(t("open_bdg"), kits.BI_DATA_GENERATOR_URL)

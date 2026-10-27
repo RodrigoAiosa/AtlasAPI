@@ -10,5 +10,5 @@ import web_api  # noqa: E402
 class handler(web_api.Base):
     def do_GET(self):
         dados = web_api.catalogo(self.consulta().get("lang"))
-        # 30 minutos na borda, como o cache do app Streamlit.
+        # 30 minutos na borda, o mesmo tempo do cache do catálogo.
         self.json(dados, status=503 if dados.get("erro") else 200, cache=0 if dados.get("erro") else 1800)

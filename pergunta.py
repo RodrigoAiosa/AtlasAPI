@@ -10,15 +10,12 @@ O projeto em si é montado pelo Montador (montador.py).
 from __future__ import annotations
 
 import datetime as dt
-import hashlib
 import re
 import unicodedata
 
-import streamlit as st
-
 import kits
 import montador
-from i18n import lang, t
+from i18n import lang
 
 
 def normalizar(texto: str) -> str:
@@ -292,90 +289,3 @@ def titulo_curto(pergunta: str, limite: int = 60) -> str:
     if frase:
         return frase.group(1)
     return texto[:limite].rsplit(" ", 1)[0].rstrip(",;:") + "…"
-
-
-# ---------- Tela ----------
-
-def _usar_exemplo(texto: str) -> None:
-    st.session_state[f"pergunta__{lang()}"] = texto
-
-
-def render() -> None:
-    st.markdown(
-        f'<div class="section-heading"><h2>{t("ask_title")}</h2><span>{t("ask_sub")}</span></div>'
-        f'<p class="kit-intro">{t("ask_intro")}</p>',
-        unsafe_allow_html=True,
-    )
-    chave = f"pergunta__{lang()}"
-    pergunta = st.text_area(t("ask_label"), key=chave, height=90, max_chars=300, placeholder=t("ask_placeholder"))
-    st.caption(t("ask_examples"))
-    colunas = st.columns(len(EXEMPLOS["pt"]))
-    for i, (coluna, exemplo) in enumerate(zip(colunas, EXEMPLOS.get(lang(), EXEMPLOS["en"]))):
-        coluna.button(exemplo, key=f"ask_ex_{i}_{lang()}", on_click=_usar_exemplo, args=(exemplo,),
-                      use_container_width=True, help=exemplo)
-
-    pergunta = (pergunta or "").strip()
-    if not pergunta:
-        return
-    entendido = interpretar(pergunta)
-    por_id = {k["id"]: k for k in montador.montaveis()}
-    if not entendido["kits"]:
-        st.info(t("ask_nothing"))
-        return
-
-    st.markdown(f"**{t('ask_understood')}**")
-    linhas = []
-    for kit_id in entendido["kits"]:
-        kit = por_id[kit_id]
-        motivos = ", ".join(f"“{m}”" for m in entendido["motivos"][kit_id])
-        linhas.append(f"- {kit['icone']} **{kits.tr(kit, 'titulo')}**: {t('ask_because', words=motivos)}")
-    if entendido["periodo"]:
-        a, b = entendido["periodo"]
-        texto = t("ask_period_one", year=a) if a == b else t("ask_period", start=a, end=b)
-        linhas.append(f"- 📅 {texto}")
-    st.markdown("\n".join(linhas))
-
-    # Ajuste manual dos kits; a lista volta ao que foi entendido quando a pergunta muda.
-    marca = hashlib.md5(pergunta.encode("utf-8")).hexdigest()[:8]
-    escolhidos = st.multiselect(
-        t("ask_adjust"), list(por_id), default=entendido["kits"], key=f"ask_kits_{marca}_{lang()}",
-        format_func=lambda i: f"{por_id[i]['icone']}  {kits.tr(por_id[i], 'titulo')}",
-    )
-    if not escolhidos:
-        st.info(t("mont_empty"))
-        return
-
-    selecao, ajustes = [], []
-    try:
-        for kit_id in escolhidos:
-            vals, feitos = valores(por_id[kit_id], entendido)
-            selecao.append((por_id[kit_id], vals))
-            ajustes += [f"{kits.tr(por_id[kit_id], 'titulo')} · {a}" for a in feitos]
-    except ValueError as erro:
-        st.warning(str(erro))
-        return
-    if ajustes:
-        with st.expander(t("ask_params", n=len(ajustes))):
-            st.markdown("\n".join(f"- {a}" for a in ajustes))
-    sem_periodo = [kits.tr(por_id[i], "titulo") for i in escolhidos if entendido["periodo"]
-                   and not any(p["tipo"] in {"data", "inteiro"} or p["chave"] in {"ANO", "PERIODO"}
-                               for p in por_id[i]["parametros"])]
-    if sem_periodo:
-        st.caption(t("ask_full_series", kits=", ".join(sem_periodo)))
-
-    plano = montador.planejar(selecao)
-    plano["pergunta"] = pergunta
-    plano["titulo"] = st.text_input(t("mont_cover_title"), value=titulo_curto(pergunta), max_chars=60,
-                                    key=f"ask_titulo_{marca}_{lang()}")
-    secoes = montador.paginas(plano)
-    st.markdown(f"**{t('mont_pages')}**")
-    st.markdown("\n".join(
-        f"- {secao['displayName']}" + (f" ({n} {t('mont_visuals')})" if n else "")
-        for secao in secoes for n in [sum("prototypeQuery" in v["config"] for v in secao["visualContainers"])]
-    ))
-    for aviso in plano["avisos"]:
-        st.caption(t(f"mont_{aviso}"))
-    pacote = montador.compactar(montador.arquivos(plano, montador._leiame(plano)))
-    st.download_button(t("mont_download"), pacote, file_name=f"{montador.PROJETO}.zip", mime="application/zip",
-                       key="ask_download", type="primary")
-    st.caption(t("mont_how"))

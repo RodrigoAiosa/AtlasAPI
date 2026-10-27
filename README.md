@@ -6,14 +6,9 @@ Diretório de APIs públicas e gratuitas, com consultas prontas para Power BI. F
 
 O catálogo local combina fontes públicas de APIs e especificações OpenAPI, com meta de até 10.000 registros únicos após deduplicação. O total real aparece no topo do site e varia conforme a disponibilidade e a atualização das fontes. A busca opcional do APIs.io consulta resultados externos sem copiar o roster inteiro; esses resultados não entram no contador local.
 
-## Duas versões, o mesmo código
+## Como o projeto funciona
 
-| Versão | Onde roda | Abas |
-|---|---|---|
-| **Site publicado** (`index.html` + funções em `api/`) | Vercel, em https://atlasapi-delta.vercel.app/ | Catálogo de APIs · Kits Power BI · Montador de Projeto · Gerador Python |
-| **App Streamlit** (`app.py`) | Na sua máquina, com `streamlit run app.py` | As quatro acima e mais **Pergunta → Projeto** |
-
-As duas usam os mesmos módulos de lógica (`catalog.py`, `kits.py`, `kits_extra.py`, `kits_ibge.py`, `montador.py`, `i18n.py`); uma mudança nesses arquivos vale para as duas.
+O site é uma página única (`index.html`) que conversa com funções Python na pasta `api/`, publicadas pela Vercel. As funções usam os módulos de lógica (`catalog.py`, `kits.py`, `kits_extra.py`, `kits_ibge.py`, `montador.py`, `i18n.py`). O site tem quatro abas: Catálogo de APIs, Kits Power BI, Montador de Projeto e Gerador Python.
 
 ## O que o site oferece
 
@@ -26,7 +21,7 @@ As duas usam os mesmos módulos de lógica (`catalog.py`, `kits.py`, `kits_extra
 - Busca opcional sob demanda no diretório APIs.io, exibida separadamente; o catálogo local não replica seu roster completo nem infla o contador. Os registros externos podem corresponder a APIs pagas, autenticadas ou apenas a especificações.
 - Script Python pronto, recolhido no próprio cartão, para os endereços que devolvem JSON direto e sem autenticação (fonte awesome-json-datasets).
 
-### Pergunta → Projeto (só no app Streamlit)
+### Pergunta → Projeto (lógica pronta, ainda sem aba no site)
 
 A pessoa escreve uma pergunta de negócio, como "Os estados com mais desemprego são os de menor renda? Como isso mudou desde 2020?", e recebe o projeto do Power BI montado para respondê-la:
 
@@ -35,7 +30,7 @@ A pessoa escreve uma pergunta de negócio, como "Os estados com mais desemprego 
 - o período citado ("desde 2020", "entre 2018 e 2023", "últimos 5 anos", "em 2024") aplicado aos kits que têm período;
 - uma página "Sua pergunta", com a pergunta no título, os cartões principais e os gráficos dos kits escolhidos, além das páginas do Montador.
 
-A tela mostra o que foi entendido e por quê, e deixa incluir ou retirar kits antes de baixar. Esta versão não usa IA: as regras ficam em `pergunta.py`.
+As regras ficam em `pergunta.py` e não usam IA. A aba existia na versão antiga em Streamlit, que foi retirada; para voltar ao site, ela precisa de uma função em `api/` e de uma aba no `index.html`.
 
 ### Kits Power BI
 
@@ -152,48 +147,33 @@ Algumas fontes não informam autenticação, HTTPS ou CORS; nesses cartões o ca
 ├── web_api.py          Ponte entre as funções da Vercel e os módulos de lógica
 ├── vercel.json         Configuração das funções da Vercel
 ├── pyproject.toml      Dependências das funções da Vercel
-├── app.py              App Streamlit: topo, abas, busca, categorias e cartões
+├── servidor_local.py   Roda o site no computador, como na Vercel
 ├── catalog.py          Leitura e união das fontes do catálogo
 ├── catalog_pt.json     Tradução de categorias e descrições para o português
 ├── catalog_en.json     Tradução para o inglês das descrições que vêm em português
-├── kits.py             Kits Power BI, Gerador Python e as telas dessas abas
+├── kits.py             Kits Power BI e gerador de scripts Python
 ├── kits_extra.py       Kits de Focus, Ipeadata, Mercado Bitcoin, Nager.Date e Our World in Data
 ├── kits_ibge.py        Kits do IBGE, gerados a partir da descrição de cada tabela do SIDRA
 ├── kits_i18n.py        Tradução dos kits para o inglês
 ├── pergunta.py         Pergunta → Projeto: lê a pergunta e escolhe kits, opções e período
 ├── montador.py         Montador de Projeto: gera o projeto Power BI (.pbip) a partir dos kits
-├── i18n.py             Textos da interface, seletor e detecção de idioma
-├── esconder_selo.py    App Streamlit: esconde os controles do Streamlit Cloud
-├── rolagem.py          App Streamlit: rola até a lista ao escolher uma categoria
-├── style.css           Visual do app Streamlit
-├── requirements.txt    Dependências do app Streamlit
-└── .streamlit/
-    └── config.toml     Tema do Streamlit
+├── i18n.py             Textos da interface e detecção de idioma
+└── .github/workflows/  Verificação automática a cada push e pull request
 ```
 
-## Executar o app Streamlit localmente
+## Executar no computador
 
-Requer Python 3.10 ou mais novo.
-
-Windows:
-
-```bat
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-streamlit run app.py
-```
-
-macOS ou Linux:
+Requer Python 3.12 ou mais novo.
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run app.py
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+source .venv/bin/activate       # macOS ou Linux
+pip install "pandas>=2.0" "requests>=2.31"
+python servidor_local.py
 ```
 
-O app precisa de internet para baixar o catálogo do GitHub e para a prévia dos kits.
+Depois abra http://localhost:8000. O site precisa de internet para baixar o catálogo e para a prévia dos kits.
 
 ## Publicação na Vercel
 

@@ -7,11 +7,11 @@ kits_i18n.py. O que faltar cai no inglês.
 from __future__ import annotations
 
 import json
+import threading
 import unicodedata
 from functools import lru_cache
 from pathlib import Path
 
-import streamlit as st
 
 SUPPORTED = {"pt": "Português", "en": "English"}
 DEFAULT = "en"
@@ -65,48 +65,20 @@ def detect(query_lang: str | None, browser_locale: str | None, headers) -> str:
     )
 
 
-def init() -> str:
-    """Define o idioma da sessão na primeira execução."""
-    if st.session_state.get("lang") not in SUPPORTED:
-        try:
-            headers = st.context.headers
-        except Exception:  # sem contexto de requisição (testes, versões antigas)
-            headers = {}
-        # st.context.locale é o idioma do navegador; existe a partir do Streamlit 1.41.
-        browser_locale = getattr(st.context, "locale", None)
-        st.session_state["lang"] = detect(st.query_params.get("lang"), browser_locale, headers)
-    return st.session_state["lang"]
+# Idioma da requisição em andamento. Cada linha de execução tem o seu, para que
+# pedidos simultâneos em idiomas diferentes não se misturem.
+_estado = threading.local()
+
+
+def set_lang(code: str | None) -> str:
+    """Define o idioma usado por t(), number() e pelas traduções do catálogo e dos kits."""
+    code = (code or "").strip().lower()[:2]
+    _estado.lang = code if code in SUPPORTED else DEFAULT
+    return _estado.lang
 
 
 def lang() -> str:
-    return st.session_state.get("lang", DEFAULT)
-
-
-def keyed(name: str) -> str:
-    """Chave de widget por idioma, para caixas de seleção com rótulos traduzidos.
-
-    O Streamlit não redesenha os rótulos de uma caixa de seleção quando só o
-    texto muda, então cada idioma usa a sua chave.
-    """
-    return f"{name}__{lang()}"
-
-
-def _remember() -> None:
-    new = st.session_state["lang"]
-    old = st.session_state.get("lang_shown", new)
-    # Leva as escolhas feitas no idioma anterior para as chaves do novo.
-    for key in [k for k in st.session_state if isinstance(k, str) and k.endswith(f"__{old}")]:
-        st.session_state[key[: -len(old)] + new] = st.session_state[key]
-    st.query_params["lang"] = new
-
-
-def selector() -> None:
-    """Seletor de idioma. A escolha vai para a URL (?lang=) para o link ser compartilhável."""
-    st.session_state["lang_shown"] = lang()
-    st.selectbox(
-        t("lang_label"), list(SUPPORTED), format_func=lambda code: f"🌐  {SUPPORTED[code]}",
-        key="lang", on_change=_remember, label_visibility="collapsed",
-    )
+    return getattr(_estado, "lang", DEFAULT)
 
 
 def t(key: str, **values) -> str:
@@ -175,7 +147,7 @@ STRINGS = {
         "mont_cover_stats": "{tables} tables  ·  {measures} measures  ·  {pages} pages",
         "mont_cover_contents": "In this report",
         "mont_cover_sources": "Sources: {sources}",
-        "mont_cover_made": "Built with API Atlas on {date}  ·  atlasapi.streamlit.app",
+        "mont_cover_made": "Built with API Atlas on {date}  ·  atlasapi-delta.vercel.app",
         "mont_columns": "columns",
         "mont_auto": "added automatically",
         "mont_rels": "Relationships",
@@ -193,7 +165,7 @@ STRINGS = {
         "mont_readme_tables": "TABLES",
         "mont_readme_rels": "RELATIONSHIPS (many -> one)",
         "mont_readme_extra": "ALSO IN THIS FILE\n  - consultas_power_query/: the Power Query (M) code of each table, to paste into another file.\n  - scripts_python/: the same data in Python (requests + pandas).\n  - medidas.dax: the DAX measures of the project.",
-        "mont_readme_source": "Generated at https://atlasapi.streamlit.app/",
+        "mont_readme_source": "Generated at https://atlasapi-delta.vercel.app/",
         "search_label": "Search APIs",
         "search_placeholder": "Find development, games, images APIs...",
         "results_title": "Search results",
@@ -351,7 +323,7 @@ STRINGS = {
         "mont_cover_stats": "{tables} tabelas  ·  {measures} medidas  ·  {pages} páginas",
         "mont_cover_contents": "Neste relatório",
         "mont_cover_sources": "Fontes: {sources}",
-        "mont_cover_made": "Gerado no API Atlas em {date}  ·  atlasapi.streamlit.app",
+        "mont_cover_made": "Gerado no API Atlas em {date}  ·  atlasapi-delta.vercel.app",
         "mont_columns": "colunas",
         "mont_auto": "incluída automaticamente",
         "mont_rels": "Relacionamentos",
@@ -369,7 +341,7 @@ STRINGS = {
         "mont_readme_tables": "TABELAS",
         "mont_readme_rels": "RELACIONAMENTOS (muitos -> um)",
         "mont_readme_extra": "TAMBÉM NESTE ARQUIVO\n  - consultas_power_query/: o código Power Query (M) de cada tabela, para colar em outro arquivo.\n  - scripts_python/: os mesmos dados em Python (requests + pandas).\n  - medidas.dax: as medidas DAX do projeto.",
-        "mont_readme_source": "Gerado em https://atlasapi.streamlit.app/",
+        "mont_readme_source": "Gerado em https://atlasapi-delta.vercel.app/",
         "search_label": "Buscar APIs",
         "search_placeholder": "Busque APIs de desenvolvimento, jogos, imagens...",
         "results_title": "Resultados da busca",
