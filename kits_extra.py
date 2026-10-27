@@ -630,15 +630,18 @@ df["latitude"] = LATITUDE
         "tabela": "dCervejaria",
         "colunas": "cervejaria_id, nome, tipo, cidade, regiao, pais, latitude, longitude, site",
         "parametros": [
+            # Só países com cervejarias na base (dados de outubro de 2026). Brasil não tem nenhuma,
+            # e o Reino Unido aparece separado em England e Scotland.
             {"chave": "PAIS", "rotulo": "País", "tipo": "opcoes", "opcoes": {
-                "Estados Unidos": "United States", "Brasil": "Brazil", "Alemanha": "Germany",
-                "Reino Unido": "United Kingdom", "Canadá": "Canada"}},
+                "Estados Unidos": "United States", "Alemanha": "Germany", "Austrália": "Australia", "Bélgica": "Belgium", "Canadá": "Canada", "Nova Zelândia": "New Zealand", "África do Sul": "South Africa", "Países Baixos": "Netherlands", "Portugal": "Portugal", "Irlanda": "Ireland", "Finlândia": "Finland", "Inglaterra": "England", "Coreia do Sul": "South Korea", "Suécia": "Sweden", "Polônia": "Poland", "Singapura": "Singapore", "Áustria": "Austria", "Escócia": "Scotland"}},
             {"chave": "LIMITE", "rotulo": "Registros por página", "tipo": "opcoes", "opcoes": {
                 "50": "50", "100": "100", "200": "200"}},
             {"chave": "PAGINA", "rotulo": "Página", "tipo": "opcoes", "opcoes": {
                 "1": "1", "2": "2", "3": "3"}},
         ],
-        "observacao": "A base é mais abrangente nos Estados Unidos; países com menor cobertura podem retornar poucas linhas. A API não exige chave.",
+        "observacao": "A base é comunitária e cobre sobretudo os Estados Unidos (cerca de 8.300 cervejarias) e a Alemanha "
+                      "(cerca de 1.400). A lista mostra só os países que têm dados; o Brasil não tem cervejarias na base. "
+                      "Nos países menores, as páginas 2 e 3 podem vir vazias: a consulta avisa quando isso acontece.",
         "ponte": "Use cidade, região e coordenadas para explorar distribuição geográfica e compare tipos de estabelecimento por localidade.",
         "visuais": ["Cervejarias por tipo", "Tabela por cidade e região", "Mapa usando latitude e longitude"],
         "dax": '''Cervejarias = DISTINCTCOUNT ( dCervejaria[cervejaria_id] )
@@ -652,8 +655,14 @@ Cidades com Cervejarias = DISTINCTCOUNT ( dCervejaria[cidade] )''',
         RelativePath = "v1/breweries",
         Query = [by_country = Pais, per_page = Limite, page = Pagina]
     ])),
+    // Sem resultado, a consulta para com uma mensagem clara em vez de devolver uma tabela vazia.
+    Verificada = if List.IsEmpty(Fonte) then error Error.Record(
+        "Sem resultados",
+        "A Open Brewery DB não tem cervejarias para " & Pais & " na página " & Pagina & ".",
+        "Escolha a página 1 ou outro país no kit Cervejarias por país do API Atlas."
+    ) else Fonte,
     Campos = {"id", "name", "brewery_type", "city", "state", "country", "latitude", "longitude", "website_url"},
-    Tabela = Table.FromRecords(Fonte, Campos, MissingField.UseNull),
+    Tabela = Table.FromRecords(Verificada, Campos, MissingField.UseNull),
     Renomeada = Table.RenameColumns(Tabela, {
         {"id", "cervejaria_id"}, {"name", "nome"}, {"brewery_type", "tipo"},
         {"city", "cidade"}, {"state", "regiao"}, {"country", "pais"}, {"website_url", "site"}
@@ -678,8 +687,12 @@ resposta = requests.get(
     timeout=30,
 )
 resposta.raise_for_status()
+dados = resposta.json()
+if not dados:
+    print(f"Aviso: a Open Brewery DB não tem cervejarias para {PAIS} na página {PAGINA}. "
+          "Escolha a página 1 ou outro país.")
 
-df = pd.DataFrame(resposta.json()).rename(columns={
+df = pd.DataFrame(dados).rename(columns={
     "id": "cervejaria_id", "name": "nome", "brewery_type": "tipo",
     "city": "cidade", "state": "regiao", "country": "pais", "website_url": "site",
 })

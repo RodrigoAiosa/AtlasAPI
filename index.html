@@ -788,7 +788,7 @@ $("#previaBtn").addEventListener("click", async () => {
     if (dados.falha) { $("#previaOut").innerHTML = `<div class="alert err">${esc(dados.falha)}</div><p class="note">${esc(dados.detalhe)}</p>`; return; }
     const cabeca = dados.colunas.map(c => `<th>${esc(c)}</th>`).join("");
     const corpo = dados.linhas.map(l => `<tr>${l.map(celula).join("")}</tr>`).join("");
-    $("#previaOut").innerHTML = `<p class="note" style="margin-top:1rem">${esc(dados.resumo)}</p>
+    $("#previaOut").innerHTML = `${dados.aviso ? `<div class="alert warn" style="margin-top:1rem">${esc(dados.aviso)}</div>` : ""}<p class="note" style="margin-top:1rem">${esc(dados.resumo)}</p>
       <div class="table-wrap"><table><thead><tr>${cabeca}</tr></thead><tbody>${corpo}</tbody></table></div>
       ${dados.csv ? `<button class="btn btn-line" id="baixarCsv">${esc(t("download_csv"))}</button>` : ""}`;
     if (dados.csv) $("#baixarCsv").addEventListener("click", () => baixar(new Blob(["﻿" + dados.csv], { type: "text/csv;charset=utf-8" }), dados.arquivo));

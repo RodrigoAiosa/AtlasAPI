@@ -211,6 +211,7 @@ def previa(kit_id: str, recebidos: dict | None, idioma: str) -> dict:
                                                            default_handler=str, force_ascii=False))
     csv = tabela.to_csv(index=False)
     return {
+        "aviso": i18n.t("preview_empty") if tabela.empty else "",
         "resumo": i18n.t("preview_shape", rows=i18n.number(len(tabela)), cols=len(tabela.columns)),
         "colunas": [str(c) for c in inicio["columns"]],
         "linhas": inicio["data"],
