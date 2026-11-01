@@ -867,8 +867,8 @@ Citações = SUM ( fPublicacao[citacoes] )''',
     ComData = Table.AddColumn(ComTitulo, "data", each
         let
             Partes = try [published][#"date-parts"]{0} otherwise
-                try [published-print][#"date-parts"]{0} otherwise
-                try [published-online][#"date-parts"]{0} otherwise
+                try [#"published-print"][#"date-parts"]{0} otherwise
+                try [#"published-online"][#"date-parts"]{0} otherwise
                 try [issued][#"date-parts"]{0} otherwise null,
             Ano = if Partes = null then null else try Number.From(Partes{0}) otherwise null,
             Mes = if Partes = null or List.Count(Partes) < 2 then 1 else try Number.From(Partes{1}) otherwise 1,
